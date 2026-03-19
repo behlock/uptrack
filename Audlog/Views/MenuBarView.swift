@@ -1,0 +1,208 @@
+import SwiftUI
+
+struct MenuBarView: View {
+    @EnvironmentObject var appState: AppState
+    @State private var tracks: [BezelTrackItem] = []
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if !appState.mediaRemoteAvailable {
+                warningBanner(
+                    "mediaremote framework unavailable. playback tracking is disabled."
+                )
+            }
+
+            if !appState.databaseAvailable {
+                warningBanner(
+                    "database failed to initialize. session history will not be saved."
+                )
+            }
+
+            if appState.isPlaying {
+                nowPlayingSection
+                TEDivider().padding(.vertical, 6)
+            }
+
+            // Scrollable session history
+            sessionsSection
+
+            TEDivider().padding(.vertical, 4)
+
+            Button(action: { clearAll() }) {
+                Text("clear all")
+                    .font(AudlogTheme.Fonts.body(12))
+                    .foregroundStyle(AudlogTheme.Colors.textSecondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, AudlogTheme.Spacing.rowHorizontal)
+                    .padding(.vertical, 6)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(HighlightButtonStyle())
+            .pointerCursor()
+
+            Button(action: { NSApplication.shared.terminate(nil) }) {
+                Text("quit")
+                    .font(AudlogTheme.Fonts.body(12))
+                    .foregroundStyle(AudlogTheme.Colors.textSecondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, AudlogTheme.Spacing.rowHorizontal)
+                    .padding(.vertical, 6)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(HighlightButtonStyle())
+            .pointerCursor()
+        }
+        .padding(.vertical, AudlogTheme.Spacing.unit)
+        .frame(width: 320)
+        .background(VisualEffectBlur(material: .fullScreenUI, blendingMode: .behindWindow))
+        .onAppear { loadTracks() }
+        .onChange(of: appState.isPlaying) { loadTracks() }
+    }
+
+    private func loadTracks() {
+        tracks = (try? appState.databaseManager?.recentTrackEntriesWithContext(limit: 200)) ?? []
+    }
+
+    private func clearAll() {
+        try? appState.databaseManager?.deleteAllSessions()
+        tracks = []
+    }
+
+    // MARK: - Sections
+
+    @ViewBuilder
+    private func warningBanner(_ message: String) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundStyle(AudlogTheme.Colors.warning)
+            Text(message)
+                .font(AudlogTheme.Fonts.mono(11))
+                .foregroundStyle(AudlogTheme.Colors.textSecondary)
+        }
+        .padding(.horizontal, AudlogTheme.Spacing.rowHorizontal)
+        .padding(.vertical, AudlogTheme.Spacing.unit)
+
+        TEDivider().padding(.vertical, 4)
+    }
+
+    @ViewBuilder
+    private var nowPlayingSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("now playing")
+                .teLabelStyle()
+                .padding(.horizontal, AudlogTheme.Spacing.rowHorizontal)
+                .padding(.bottom, 2)
+
+            if let session = appState.currentSession {
+                HStack(alignment: .center, spacing: 6) {
+                    AppNameLabel(appName: session.appName, appBundleId: session.appBundleId, fontSize: 13)
+
+                    liveIndicator
+                }
+                .padding(.horizontal, AudlogTheme.Spacing.rowHorizontal)
+            }
+
+            if let track = appState.currentTrack {
+                VStack(alignment: .leading, spacing: 2) {
+                    if let title = track.title {
+                        Text(title.lowercased())
+                            .font(AudlogTheme.Fonts.body(13))
+                            .foregroundStyle(AudlogTheme.Colors.textPrimary)
+                            .lineLimit(1)
+                    }
+                    if let artist = track.artist {
+                        Text(artist.lowercased())
+                            .font(AudlogTheme.Fonts.body(12))
+                            .foregroundStyle(AudlogTheme.Colors.textSecondary)
+                            .lineLimit(1)
+                    }
+                }
+                .padding(.horizontal, AudlogTheme.Spacing.rowHorizontal)
+            }
+
+            if let session = appState.currentSession {
+                Text(TimeFormatting.formatListeningDuration(since: session.startedAt))
+                    .font(AudlogTheme.Fonts.mono(11))
+                    .foregroundStyle(AudlogTheme.Colors.textTertiary)
+                    .padding(.horizontal, AudlogTheme.Spacing.rowHorizontal)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+
+    @ViewBuilder
+    private var sessionsSection: some View {
+        if tracks.isEmpty {
+            Text("no tracks yet")
+                .font(AudlogTheme.Fonts.mono(11))
+                .foregroundStyle(AudlogTheme.Colors.textTertiary)
+                .padding(.horizontal, AudlogTheme.Spacing.rowHorizontal)
+                .padding(.vertical, 4)
+        } else {
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 0) {
+                    ForEach(tracks) { track in
+                        trackRow(track)
+                    }
+                }
+            }
+            .frame(maxHeight: 400)
+        }
+    }
+
+    @ViewBuilder
+    private func trackRow(_ track: BezelTrackItem) -> some View {
+        let canPlay = track.appBundleId.contains("com.apple.Music") && track.title != nil
+        Button(action: { if canPlay { playInAppleMusic(track) } }) {
+            HStack(spacing: 6) {
+                VStack(alignment: .leading, spacing: 1) {
+                    HStack(spacing: 4) {
+                        Text(track.title?.lowercased() ?? "unknown track")
+                            .font(AudlogTheme.Fonts.body(12))
+                            .foregroundStyle(AudlogTheme.Colors.textPrimary)
+                            .lineLimit(1)
+                        if let artist = track.artist {
+                            Text("—")
+                                .font(AudlogTheme.Fonts.body(11))
+                                .foregroundStyle(AudlogTheme.Colors.textTertiary)
+                            Text(artist.lowercased())
+                                .font(AudlogTheme.Fonts.body(11))
+                                .foregroundStyle(AudlogTheme.Colors.textSecondary)
+                                .lineLimit(1)
+                        }
+                    }
+                }
+
+                Spacer()
+
+                AppNameLabel(appName: track.appName, appBundleId: track.appBundleId, fontSize: 9)
+            }
+            .padding(.horizontal, AudlogTheme.Spacing.rowHorizontal)
+            .padding(.vertical, 5)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(HighlightButtonStyle())
+        .pointerCursor()
+    }
+
+    private func playInAppleMusic(_ track: BezelTrackItem) {
+        guard let title = track.title else { return }
+        debugLog("[MenuBarView] playInAppleMusic: \(title) — bundleId: \(track.appBundleId)")
+        playTrackInAppleMusic(title: title)
+    }
+
+
+    // MARK: - Helpers
+
+    private var liveIndicator: some View {
+        HStack(alignment: .center, spacing: 4) {
+            Circle()
+                .fill(AudlogTheme.Colors.accent)
+                .frame(width: 6, height: 6)
+            Text("live")
+                .font(AudlogTheme.Fonts.mono(13))
+                .foregroundStyle(AudlogTheme.Colors.accent)
+        }
+    }
+
+}
