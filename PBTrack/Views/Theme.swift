@@ -34,7 +34,7 @@ extension NSColor {
 
 // MARK: - Theme
 
-enum AudlogTheme {
+enum PBTrackTheme {
     enum Colors {
         static let background = Color(light: "#FAFAFA", dark: "#1A1A1A")
         static let surface = Color(light: "#FFFFFF", dark: "#242424")
@@ -92,7 +92,7 @@ enum AudlogTheme {
 struct TEDivider: View {
     var body: some View {
         Rectangle()
-            .fill(AudlogTheme.Colors.divider)
+            .fill(PBTrackTheme.Colors.divider)
             .frame(height: 1)
     }
 }
@@ -112,19 +112,19 @@ struct AppNameLabel: View {
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(height: fontSize + 1)
-                    .foregroundStyle(AudlogTheme.Colors.textTertiary)
+                    .foregroundStyle(PBTrackTheme.Colors.textTertiary)
                 Text("spotify")
-                    .font(AudlogTheme.Fonts.mono(fontSize))
-                    .foregroundStyle(AudlogTheme.Colors.textTertiary)
+                    .font(PBTrackTheme.Fonts.mono(fontSize))
+                    .foregroundStyle(PBTrackTheme.Colors.textTertiary)
             }
         } else if lower.contains("music") || lower.contains("itunes") {
             Text("\u{f8ff} music")
-                .font(AudlogTheme.Fonts.mono(fontSize))
-                .foregroundStyle(AudlogTheme.Colors.textTertiary)
+                .font(PBTrackTheme.Fonts.mono(fontSize))
+                .foregroundStyle(PBTrackTheme.Colors.textTertiary)
         } else {
             Text(lower)
-                .font(AudlogTheme.Fonts.mono(fontSize))
-                .foregroundStyle(AudlogTheme.Colors.textTertiary)
+                .font(PBTrackTheme.Fonts.mono(fontSize))
+                .foregroundStyle(PBTrackTheme.Colors.textTertiary)
         }
     }
 }
@@ -159,7 +159,7 @@ struct HighlightButtonStyle: ButtonStyle {
             .background(
                 RoundedRectangle(cornerRadius: 4)
                     .fill(isHovered || configuration.isPressed
-                          ? AudlogTheme.Colors.textPrimary.opacity(0.1)
+                          ? PBTrackTheme.Colors.textPrimary.opacity(0.1)
                           : Color.clear)
             )
             .onHover { isHovered = $0 }
@@ -171,8 +171,8 @@ struct HighlightButtonStyle: ButtonStyle {
 extension View {
     func teLabelStyle() -> some View {
         self
-            .font(AudlogTheme.Fonts.mono(10))
-            .foregroundStyle(AudlogTheme.Colors.textTertiary)
+            .font(PBTrackTheme.Fonts.mono(10))
+            .foregroundStyle(PBTrackTheme.Colors.textTertiary)
             .textCase(.lowercase)
             .tracking(0.5)
     }

@@ -29,7 +29,7 @@ final class BezelPanel: NSPanel {
         visualEffect.state = .active
         visualEffect.blendingMode = .behindWindow
         visualEffect.wantsLayer = true
-        visualEffect.layer?.cornerRadius = AudlogTheme.Dimensions.bezelCornerRadius
+        visualEffect.layer?.cornerRadius = PBTrackTheme.Dimensions.bezelCornerRadius
         visualEffect.layer?.masksToBounds = true
 
         contentView.translatesAutoresizingMaskIntoConstraints = false
@@ -43,8 +43,8 @@ final class BezelPanel: NSPanel {
 
         self.contentView = visualEffect
         setContentSize(NSSize(
-            width: AudlogTheme.Dimensions.bezelWidth,
-            height: AudlogTheme.Dimensions.bezelHeight
+            width: PBTrackTheme.Dimensions.bezelWidth,
+            height: PBTrackTheme.Dimensions.bezelHeight
         ))
     }
 

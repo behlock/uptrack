@@ -30,10 +30,10 @@ struct MenuBarView: View {
 
             Button(action: { clearAll() }) {
                 Text("clear all")
-                    .font(AudlogTheme.Fonts.body(12))
-                    .foregroundStyle(AudlogTheme.Colors.textSecondary)
+                    .font(PBTrackTheme.Fonts.body(12))
+                    .foregroundStyle(PBTrackTheme.Colors.textSecondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, AudlogTheme.Spacing.rowHorizontal)
+                    .padding(.horizontal, PBTrackTheme.Spacing.rowHorizontal)
                     .padding(.vertical, 6)
                     .contentShape(Rectangle())
             }
@@ -42,17 +42,17 @@ struct MenuBarView: View {
 
             Button(action: { NSApplication.shared.terminate(nil) }) {
                 Text("quit")
-                    .font(AudlogTheme.Fonts.body(12))
-                    .foregroundStyle(AudlogTheme.Colors.textSecondary)
+                    .font(PBTrackTheme.Fonts.body(12))
+                    .foregroundStyle(PBTrackTheme.Colors.textSecondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, AudlogTheme.Spacing.rowHorizontal)
+                    .padding(.horizontal, PBTrackTheme.Spacing.rowHorizontal)
                     .padding(.vertical, 6)
                     .contentShape(Rectangle())
             }
             .buttonStyle(HighlightButtonStyle())
             .pointerCursor()
         }
-        .padding(.vertical, AudlogTheme.Spacing.unit)
+        .padding(.vertical, PBTrackTheme.Spacing.unit)
         .frame(width: 320)
         .background(VisualEffectBlur(material: .fullScreenUI, blendingMode: .behindWindow))
         .onAppear { loadTracks() }
@@ -74,13 +74,13 @@ struct MenuBarView: View {
     private func warningBanner(_ message: String) -> some View {
         HStack(spacing: 8) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundStyle(AudlogTheme.Colors.warning)
+                .foregroundStyle(PBTrackTheme.Colors.warning)
             Text(message)
-                .font(AudlogTheme.Fonts.mono(11))
-                .foregroundStyle(AudlogTheme.Colors.textSecondary)
+                .font(PBTrackTheme.Fonts.mono(11))
+                .foregroundStyle(PBTrackTheme.Colors.textSecondary)
         }
-        .padding(.horizontal, AudlogTheme.Spacing.rowHorizontal)
-        .padding(.vertical, AudlogTheme.Spacing.unit)
+        .padding(.horizontal, PBTrackTheme.Spacing.rowHorizontal)
+        .padding(.vertical, PBTrackTheme.Spacing.unit)
 
         TEDivider().padding(.vertical, 4)
     }
@@ -90,7 +90,7 @@ struct MenuBarView: View {
         VStack(alignment: .leading, spacing: 6) {
             Text("now playing")
                 .teLabelStyle()
-                .padding(.horizontal, AudlogTheme.Spacing.rowHorizontal)
+                .padding(.horizontal, PBTrackTheme.Spacing.rowHorizontal)
                 .padding(.bottom, 2)
 
             if let session = appState.currentSession {
@@ -99,32 +99,32 @@ struct MenuBarView: View {
 
                     liveIndicator
                 }
-                .padding(.horizontal, AudlogTheme.Spacing.rowHorizontal)
+                .padding(.horizontal, PBTrackTheme.Spacing.rowHorizontal)
             }
 
             if let track = appState.currentTrack {
                 VStack(alignment: .leading, spacing: 2) {
                     if let title = track.title {
                         Text(title.lowercased())
-                            .font(AudlogTheme.Fonts.body(13))
-                            .foregroundStyle(AudlogTheme.Colors.textPrimary)
+                            .font(PBTrackTheme.Fonts.body(13))
+                            .foregroundStyle(PBTrackTheme.Colors.textPrimary)
                             .lineLimit(1)
                     }
                     if let artist = track.artist {
                         Text(artist.lowercased())
-                            .font(AudlogTheme.Fonts.body(12))
-                            .foregroundStyle(AudlogTheme.Colors.textSecondary)
+                            .font(PBTrackTheme.Fonts.body(12))
+                            .foregroundStyle(PBTrackTheme.Colors.textSecondary)
                             .lineLimit(1)
                     }
                 }
-                .padding(.horizontal, AudlogTheme.Spacing.rowHorizontal)
+                .padding(.horizontal, PBTrackTheme.Spacing.rowHorizontal)
             }
 
             if let session = appState.currentSession {
                 Text(TimeFormatting.formatListeningDuration(since: session.startedAt))
-                    .font(AudlogTheme.Fonts.mono(11))
-                    .foregroundStyle(AudlogTheme.Colors.textTertiary)
-                    .padding(.horizontal, AudlogTheme.Spacing.rowHorizontal)
+                    .font(PBTrackTheme.Fonts.mono(11))
+                    .foregroundStyle(PBTrackTheme.Colors.textTertiary)
+                    .padding(.horizontal, PBTrackTheme.Spacing.rowHorizontal)
             }
         }
         .padding(.vertical, 4)
@@ -134,9 +134,9 @@ struct MenuBarView: View {
     private var sessionsSection: some View {
         if tracks.isEmpty {
             Text("no tracks yet")
-                .font(AudlogTheme.Fonts.mono(11))
-                .foregroundStyle(AudlogTheme.Colors.textTertiary)
-                .padding(.horizontal, AudlogTheme.Spacing.rowHorizontal)
+                .font(PBTrackTheme.Fonts.mono(11))
+                .foregroundStyle(PBTrackTheme.Colors.textTertiary)
+                .padding(.horizontal, PBTrackTheme.Spacing.rowHorizontal)
                 .padding(.vertical, 4)
         } else {
             ScrollView {
@@ -158,16 +158,16 @@ struct MenuBarView: View {
                 VStack(alignment: .leading, spacing: 1) {
                     HStack(spacing: 4) {
                         Text(track.title?.lowercased() ?? "unknown track")
-                            .font(AudlogTheme.Fonts.body(12))
-                            .foregroundStyle(AudlogTheme.Colors.textPrimary)
+                            .font(PBTrackTheme.Fonts.body(12))
+                            .foregroundStyle(PBTrackTheme.Colors.textPrimary)
                             .lineLimit(1)
                         if let artist = track.artist {
                             Text("—")
-                                .font(AudlogTheme.Fonts.body(11))
-                                .foregroundStyle(AudlogTheme.Colors.textTertiary)
+                                .font(PBTrackTheme.Fonts.body(11))
+                                .foregroundStyle(PBTrackTheme.Colors.textTertiary)
                             Text(artist.lowercased())
-                                .font(AudlogTheme.Fonts.body(11))
-                                .foregroundStyle(AudlogTheme.Colors.textSecondary)
+                                .font(PBTrackTheme.Fonts.body(11))
+                                .foregroundStyle(PBTrackTheme.Colors.textSecondary)
                                 .lineLimit(1)
                         }
                     }
@@ -177,7 +177,7 @@ struct MenuBarView: View {
 
                 AppNameLabel(appName: track.appName, appBundleId: track.appBundleId, fontSize: 9)
             }
-            .padding(.horizontal, AudlogTheme.Spacing.rowHorizontal)
+            .padding(.horizontal, PBTrackTheme.Spacing.rowHorizontal)
             .padding(.vertical, 5)
             .contentShape(Rectangle())
         }
@@ -197,11 +197,11 @@ struct MenuBarView: View {
     private var liveIndicator: some View {
         HStack(alignment: .center, spacing: 4) {
             Circle()
-                .fill(AudlogTheme.Colors.accent)
+                .fill(PBTrackTheme.Colors.accent)
                 .frame(width: 6, height: 6)
             Text("live")
-                .font(AudlogTheme.Fonts.mono(13))
-                .foregroundStyle(AudlogTheme.Colors.accent)
+                .font(PBTrackTheme.Fonts.mono(13))
+                .foregroundStyle(PBTrackTheme.Colors.accent)
         }
     }
 

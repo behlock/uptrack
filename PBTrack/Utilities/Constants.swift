@@ -2,8 +2,8 @@ import AppKit
 import Foundation
 
 enum Constants {
-    static let databaseDirectoryName = "Audlog"
-    static let databaseFileName = "audlog.db"
+    static let databaseDirectoryName = "PBTrack"
+    static let databaseFileName = "pbtrack.db"
 
     static var databaseURL: URL {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
@@ -38,7 +38,7 @@ enum Constants {
 
 private final class DebugLogger: @unchecked Sendable {
     static let shared = DebugLogger()
-    private let queue = DispatchQueue(label: "com.audlog.debugLog", qos: .utility)
+    private let queue = DispatchQueue(label: "com.pbtrack.debugLog", qos: .utility)
     private let formatter = ISO8601DateFormatter()
 
     func log(_ message: String, date: Date) {
