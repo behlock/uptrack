@@ -71,18 +71,18 @@ final class BezelController: ObservableObject {
 
         let bundleId = item.appBundleId.lowercased()
         if bundleId.contains("spotify") {
-            playInSpotify(title: title, artist: item.artist)
+            playInSpotify(item)
         } else {
-            playInAppleMusic(title: title)
+            playTrackInAppleMusic(title: title)
         }
     }
 
-    private func playInAppleMusic(title: String) {
-        playTrackInAppleMusic(title: title)
-    }
-
-    private func playInSpotify(title: String, artist: String?) {
-        playTrackInSpotify(title: title, artist: artist)
+    private func playInSpotify(_ item: BezelTrackItem) {
+        if let uri = item.sourceURI {
+            playTrackInSpotifyByURI(uri: uri)
+        } else if let title = item.title {
+            playTrackInSpotify(title: title, artist: item.artist)
+        }
     }
 
     private func createPanel() {

@@ -54,5 +54,11 @@ enum AppMigrations {
                 columns: ["started_at"]
             )
         }
+
+        migrator.registerMigration("v2") { db in
+            try db.alter(table: "track_entries") { t in
+                t.add(column: "source_uri", .text)
+            }
+        }
     }
 }

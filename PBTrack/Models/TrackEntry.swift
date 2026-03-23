@@ -11,6 +11,7 @@ struct TrackEntry: Codable, Sendable, Identifiable, Equatable {
     var startedAt: Date
     var durationSeconds: Double?
     var elapsedSeconds: Double?
+    var sourceURI: String?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -22,6 +23,7 @@ struct TrackEntry: Codable, Sendable, Identifiable, Equatable {
         case startedAt = "started_at"
         case durationSeconds = "duration_seconds"
         case elapsedSeconds = "elapsed_seconds"
+        case sourceURI = "source_uri"
     }
 }
 

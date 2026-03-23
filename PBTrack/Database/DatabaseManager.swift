@@ -33,8 +33,7 @@ final class DatabaseManager: Sendable {
     @discardableResult
     func createSession(_ session: PlaybackSession) throws -> PlaybackSession {
         try dbQueue.write { db in
-            var record = session
-            try record.insert(db)
+            let record = try session.inserted(db)
             debugLog("[DatabaseManager] Created session id=\(record.id ?? -1)")
             return record
         }
@@ -111,8 +110,7 @@ final class DatabaseManager: Sendable {
     @discardableResult
     func addTrackEntry(_ entry: TrackEntry) throws -> TrackEntry {
         try dbQueue.write { db in
-            var record = entry
-            try record.insert(db)
+            let record = try entry.inserted(db)
             return record
         }
     }
@@ -229,7 +227,7 @@ final class DatabaseManager: Sendable {
         try dbQueue.read { db in
             let rows = try Row.fetchAll(db, sql: """
                 SELECT t.id, t.title, t.artist, t.album, t.artwork_data,
-                       t.duration_seconds, t.started_at,
+                       t.duration_seconds, t.started_at, t.source_uri,
                        s.app_name, s.app_bundle_id, s.output_device_name
                 FROM track_entries t
                 INNER JOIN playback_sessions s ON s.id = t.session_id
@@ -247,7 +245,8 @@ final class DatabaseManager: Sendable {
                     startedAt: row["started_at"],
                     appName: row["app_name"],
                     appBundleId: row["app_bundle_id"],
-                    outputDeviceName: row["output_device_name"]
+                    outputDeviceName: row["output_device_name"],
+                    sourceURI: row["source_uri"]
                 )
             }
         }

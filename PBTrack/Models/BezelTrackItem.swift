@@ -11,4 +11,5 @@ struct BezelTrackItem: Sendable, Identifiable {
     let appName: String
     let appBundleId: String
     let outputDeviceName: String?
+    let sourceURI: String?
 }

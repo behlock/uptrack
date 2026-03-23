@@ -36,6 +36,7 @@ final class SessionManager: ObservableObject {
         duration: Double?,
         elapsed: Double?,
         isPlaying: Bool,
+        trackURI: String? = nil,
         device: AudioDevice
     ) {
         debugLog("[SessionManager] handleNowPlayingUpdate: \(appName) | \(title ?? "nil") - \(artist ?? "nil") | playing: \(isPlaying) | device: \(device.name)")
@@ -78,7 +79,8 @@ final class SessionManager: ObservableObject {
                 artist: artist,
                 album: album,
                 artworkData: artworkData,
-                duration: duration
+                duration: duration,
+                sourceURI: trackURI
             )
             debugLog("[SessionManager] Track saved, currentTrack id: \(currentTrack?.id ?? -1)")
         }
@@ -183,7 +185,8 @@ final class SessionManager: ObservableObject {
         artist: String?,
         album: String?,
         artworkData: Data?,
-        duration: Double?
+        duration: Double?,
+        sourceURI: String? = nil
     ) {
         guard let sessionId = currentSession?.id else {
             debugLog("[SessionManager] startNewTrack: no session id, skipping")
@@ -200,7 +203,8 @@ final class SessionManager: ObservableObject {
             album: album,
             artworkData: processedArtwork,
             startedAt: Date(),
-            durationSeconds: duration
+            durationSeconds: duration,
+            sourceURI: sourceURI
         )
 
         do {

@@ -92,3 +92,28 @@ func playTrackInSpotify(title: String, artist: String?) {
           let url = URL(string: "spotify:search:\(encoded)") else { return }
     NSWorkspace.shared.open(url)
 }
+
+/// Play a specific track in Spotify by URI via AppleScript
+func playTrackInSpotifyByURI(uri: String) {
+    let escaped = uri.replacingOccurrences(of: "\\", with: "\\\\")
+                     .replacingOccurrences(of: "\"", with: "\\\"")
+    let script = """
+        tell application "Spotify"
+            play track "\(escaped)"
+        end tell
+        """
+    debugLog("[Spotify] AppleScript: play track \"\(uri)\"")
+    DispatchQueue.global(qos: .userInitiated).async {
+        var error: NSDictionary?
+        if let appleScript = NSAppleScript(source: script) {
+            appleScript.executeAndReturnError(&error)
+            if let error {
+                debugLog("[Spotify] AppleScript error: \(error)")
+            } else {
+                debugLog("[Spotify] AppleScript executed successfully")
+            }
+        } else {
+            debugLog("[Spotify] Failed to create NSAppleScript")
+        }
+    }
+}

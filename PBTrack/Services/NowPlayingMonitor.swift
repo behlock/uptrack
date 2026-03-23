@@ -32,6 +32,7 @@ private struct DistributedMediaInfo: Sendable {
     let playerState: String?
     let durationSeconds: Double?
     let elapsedSeconds: Double?
+    let trackURI: String?
 
     var isPlaying: Bool { playerState == "Playing" }
 
@@ -61,6 +62,8 @@ private struct DistributedMediaInfo: Sendable {
         if let p = userInfo["Playback Position"] as? Double { elapsedSeconds = p }
         else if let p = userInfo["Player Position"] as? Double { elapsedSeconds = p }
 
+        let trackURI = userInfo["Track ID"] as? String
+
         return DistributedMediaInfo(
             bundleId: appInfo?.bundleId ?? "unknown",
             appName: appInfo?.name ?? "Unknown App",
@@ -69,7 +72,8 @@ private struct DistributedMediaInfo: Sendable {
             album: album,
             playerState: playerState,
             durationSeconds: durationSeconds,
-            elapsedSeconds: elapsedSeconds
+            elapsedSeconds: elapsedSeconds,
+            trackURI: trackURI
         )
     }
 }
@@ -84,6 +88,7 @@ struct NowPlayingInfo: Sendable {
     let durationSeconds: Double?
     let elapsedSeconds: Double?
     let isPlaying: Bool
+    let trackURI: String?
 }
 
 @MainActor
@@ -179,7 +184,8 @@ final class NowPlayingMonitor: ObservableObject {
             artworkData: nil,
             durationSeconds: info.durationSeconds,
             elapsedSeconds: info.elapsedSeconds,
-            isPlaying: info.isPlaying
+            isPlaying: info.isPlaying,
+            trackURI: info.trackURI
         )
 
         latestInfo = nowPlaying
@@ -194,6 +200,7 @@ final class NowPlayingMonitor: ObservableObject {
             duration: info.durationSeconds,
             elapsed: info.elapsedSeconds,
             isPlaying: info.isPlaying,
+            trackURI: info.trackURI,
             device: audioDeviceMonitor.currentDevice
         )
     }
@@ -299,7 +306,8 @@ final class NowPlayingMonitor: ObservableObject {
             artworkData: info.artworkData,
             durationSeconds: info.durationSeconds,
             elapsedSeconds: info.elapsedSeconds,
-            isPlaying: info.playbackRate > 0.0
+            isPlaying: info.playbackRate > 0.0,
+            trackURI: nil
         )
 
         latestInfo = nowPlaying
@@ -314,6 +322,7 @@ final class NowPlayingMonitor: ObservableObject {
             duration: info.durationSeconds,
             elapsed: info.elapsedSeconds,
             isPlaying: info.playbackRate > 0.0,
+            trackURI: nil,
             device: audioDeviceMonitor.currentDevice
         )
     }

@@ -152,8 +152,10 @@ struct MenuBarView: View {
 
     @ViewBuilder
     private func trackRow(_ track: BezelTrackItem) -> some View {
-        let canPlay = track.appBundleId.contains("com.apple.Music") && track.title != nil
-        Button(action: { if canPlay { playInAppleMusic(track) } }) {
+        let isAppleMusic = track.appBundleId.contains("com.apple.Music")
+        let isSpotify = track.appBundleId.lowercased().contains("spotify")
+        let canPlay = (isAppleMusic || isSpotify) && track.title != nil
+        Button(action: { if canPlay { playTrack(track) } }) {
             HStack(spacing: 6) {
                 VStack(alignment: .leading, spacing: 1) {
                     HStack(spacing: 4) {
@@ -185,12 +187,25 @@ struct MenuBarView: View {
         .pointerCursor()
     }
 
-    private func playInAppleMusic(_ track: BezelTrackItem) {
+    private func playTrack(_ track: BezelTrackItem) {
         guard let title = track.title else { return }
-        debugLog("[MenuBarView] playInAppleMusic: \(title) — bundleId: \(track.appBundleId)")
-        playTrackInAppleMusic(title: title)
+        if track.appBundleId.lowercased().contains("spotify") {
+            playInSpotify(track)
+        } else {
+            debugLog("[MenuBarView] playInAppleMusic: \(title) — bundleId: \(track.appBundleId)")
+            playTrackInAppleMusic(title: title)
+        }
     }
 
+    private func playInSpotify(_ track: BezelTrackItem) {
+        if let uri = track.sourceURI {
+            debugLog("[MenuBarView] playInSpotify via URI: \(uri)")
+            playTrackInSpotifyByURI(uri: uri)
+        } else if let title = track.title {
+            debugLog("[MenuBarView] playInSpotify via search: \(title)")
+            playTrackInSpotify(title: title, artist: track.artist)
+        }
+    }
 
     // MARK: - Helpers
 
