@@ -9,9 +9,9 @@ packages:
   GRDB:
     url: https://github.com/groue/GRDB.swift
     from: "7.0.0"
-  HotKey:
-    url: https://github.com/soffes/HotKey
-    from: "0.2.1"
+  KeyboardShortcuts:
+    url: https://github.com/sindresorhus/KeyboardShortcuts
+    from: "2.0.0"
   Sparkle:
     url: https://github.com/sparkle-project/Sparkle
     from: "2.1.0"
@@ -60,7 +60,7 @@ targets:
           CODE_SIGN_STYLE: Manual
     dependencies:
       - package: GRDB
-      - package: HotKey
+      - package: KeyboardShortcuts
       - package: Sparkle
       - sdk: CoreAudio.framework
       - sdk: ServiceManagement.framework

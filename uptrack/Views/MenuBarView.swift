@@ -27,17 +27,7 @@ struct MenuBarView: View {
             // Scrollable session history
             sessionsSection
 
-            Button(action: { clearAll() }) {
-                Text("clear all")
-                    .font(uptrackTheme.Fonts.body(12))
-                    .foregroundStyle(uptrackTheme.Colors.textSecondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, uptrackTheme.Spacing.rowHorizontal)
-                    .padding(.vertical, 6)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(HighlightButtonStyle())
-            .pointerCursor()
+            TEDivider().padding(.vertical, 4)
 
             Button(action: {
                 AboutWindowController.show(
@@ -55,6 +45,32 @@ struct MenuBarView: View {
             }
             .buttonStyle(HighlightButtonStyle())
             .pointerCursor()
+
+            Button(action: { SettingsWindowController.show() }) {
+                Text("settings")
+                    .font(uptrackTheme.Fonts.body(12))
+                    .foregroundStyle(uptrackTheme.Colors.textSecondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, uptrackTheme.Spacing.rowHorizontal)
+                    .padding(.vertical, 6)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(HighlightButtonStyle())
+            .pointerCursor()
+
+            Button(action: { showClearConfirmation = true }) {
+                Text("clear all")
+                    .font(uptrackTheme.Fonts.body(12))
+                    .foregroundStyle(uptrackTheme.Colors.textSecondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, uptrackTheme.Spacing.rowHorizontal)
+                    .padding(.vertical, 6)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(HighlightButtonStyle())
+            .pointerCursor()
+
+            TEDivider().padding(.vertical, 4)
 
             Button(action: { NSApplication.shared.terminate(nil) }) {
                 Text("quit")
@@ -82,11 +98,7 @@ struct MenuBarView: View {
     }
 
     private func loadTracks() {
-        tracks = (try? appState.databaseManager?.recentTrackEntriesWithContext(limit: 200)) ?? []
-    }
-
-    private func clearAll() {
-        showClearConfirmation = true
+        tracks = (try? appState.databaseManager?.recentTrackEntriesWithContext(limit: 50)) ?? []
     }
 
     private func performClearAll() {
@@ -173,7 +185,7 @@ struct MenuBarView: View {
                     }
                 }
             }
-            .frame(maxHeight: 400)
+            .frame(maxHeight: 200)
         }
     }
 

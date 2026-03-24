@@ -1,20 +1,18 @@
 import AppKit
-import HotKey
+import KeyboardShortcuts
 
 @MainActor
 final class HotkeyManager {
     var onHotkeyActivated: (() -> Void)?
-    private var hotKey: HotKey?
 
     func start() {
-        hotKey = HotKey(key: .tab, modifiers: [.option, .shift])
-        hotKey?.keyDownHandler = { [weak self] in
+        KeyboardShortcuts.onKeyDown(for: .showBezel) { [weak self] in
             self?.onHotkeyActivated?()
         }
-        debugLog("[HotkeyManager] Started — Option+Shift+Tab to activate bezel")
+        debugLog("[HotkeyManager] Started — listening for showBezel shortcut")
     }
 
     func stop() {
-        hotKey = nil
+        KeyboardShortcuts.disable(.showBezel)
     }
 }
