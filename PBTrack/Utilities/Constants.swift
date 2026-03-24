@@ -91,11 +91,9 @@ func playTrackInAppleMusic(title: String) {
         end tell
         """
 
-    DispatchQueue.global(qos: .userInitiated).async {
-        var error: NSDictionary?
-        if let appleScript = NSAppleScript(source: script) {
-            appleScript.executeAndReturnError(&error)
-        }
+    var error: NSDictionary?
+    if let appleScript = NSAppleScript(source: script) {
+        appleScript.executeAndReturnError(&error)
     }
 }
 
@@ -104,6 +102,7 @@ func playTrackInSpotify(title: String, artist: String?) {
     let query = [title, artist].compactMap { $0 }.joined(separator: " ")
     guard let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
           let url = URL(string: "spotify:search:\(encoded)") else { return }
+    debugLog("[Spotify] Opening search: \(url)")
     NSWorkspace.shared.open(url)
 }
 
@@ -115,18 +114,12 @@ func playTrackInSpotifyByURI(uri: String) {
             play track "\(escaped)"
         end tell
         """
-    debugLog("[Spotify] AppleScript: play track \"\(uri)\"")
-    DispatchQueue.global(qos: .userInitiated).async {
-        var error: NSDictionary?
-        if let appleScript = NSAppleScript(source: script) {
-            appleScript.executeAndReturnError(&error)
-            if let error {
-                debugLog("[Spotify] AppleScript error: \(error)")
-            } else {
-                debugLog("[Spotify] AppleScript executed successfully")
-            }
-        } else {
-            debugLog("[Spotify] Failed to create NSAppleScript")
+    debugLog("[Spotify] Playing URI: \(uri)")
+    var error: NSDictionary?
+    if let appleScript = NSAppleScript(source: script) {
+        appleScript.executeAndReturnError(&error)
+        if let error {
+            debugLog("[Spotify] AppleScript error: \(error)")
         }
     }
 }

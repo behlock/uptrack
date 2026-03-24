@@ -191,9 +191,9 @@ extension View {
     func pointerCursor() -> some View {
         self.onHover { hovering in
             if hovering {
-                NSCursor.pointingHand.push()
+                NSCursor.pointingHand.set()
             } else {
-                NSCursor.pop()
+                NSCursor.arrow.set()
             }
         }
     }

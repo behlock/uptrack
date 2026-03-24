@@ -133,6 +133,15 @@ final class DatabaseManager: Sendable {
         }
     }
 
+    func updateTrackEntrySourceURI(id: Int64, sourceURI: String) throws {
+        try dbQueue.write { db in
+            try db.execute(
+                sql: "UPDATE track_entries SET source_uri = ? WHERE id = ?",
+                arguments: [sourceURI, id]
+            )
+        }
+    }
+
     // MARK: - Aggregates
 
     struct AppInfo: Sendable {

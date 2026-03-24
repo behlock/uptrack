@@ -23,7 +23,7 @@
 	<key>LSUIElement</key>
 	<true/>
 	<key>NSAppleEventsUsageDescription</key>
-	<string>pbtrack needs access to control Music to play tracks from your history.</string>
+	<string>pbtrack needs access to control Music and Spotify to play tracks from your history.</string>
 	<key>SUFeedURL</key>
 	<string>https://behlock.github.io/pbtrack/appcast.xml</string>
 	<key>SUPublicEDKey</key>

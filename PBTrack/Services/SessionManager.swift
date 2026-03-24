@@ -95,6 +95,13 @@ final class SessionManager: ObservableObject {
         handlePause()
     }
 
+    /// Update the current track's source URI (e.g. Spotify track URI from distributed notifications).
+    func patchCurrentTrackURI(_ uri: String) {
+        guard let track = currentTrack, let trackId = track.id, track.sourceURI == nil else { return }
+        currentTrack?.sourceURI = uri
+        try? database.updateTrackEntrySourceURI(id: trackId, sourceURI: uri)
+    }
+
     /// Reset state after all sessions have been deleted (e.g. "clear all").
     func resetAfterClearAll() {
         resetState()

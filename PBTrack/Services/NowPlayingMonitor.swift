@@ -170,8 +170,13 @@ final class NowPlayingMonitor: ObservableObject {
     }
 
     private func handleDistributedMediaInfo(_ info: DistributedMediaInfo) {
-        // If MediaRemote is working, skip distributed notifications to avoid duplicates
-        if mediaRemoteWorking { return }
+        // If MediaRemote is working, only capture the track URI (which MediaRemote doesn't provide)
+        if mediaRemoteWorking {
+            if let uri = info.trackURI, !uri.isEmpty {
+                sessionManager.patchCurrentTrackURI(uri)
+            }
+            return
+        }
 
         debugLog("[NowPlayingMonitor] Distributed: \(info.appName) | \(info.title ?? "nil") - \(info.artist ?? "nil") | state: \(info.playerState ?? "nil") | duration: \(info.durationSeconds ?? -1)")
 
