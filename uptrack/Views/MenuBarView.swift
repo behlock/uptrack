@@ -185,7 +185,7 @@ struct MenuBarView: View {
                     }
                 }
             }
-            .frame(maxHeight: 200)
+            .frame(maxHeight: 300)
         }
     }
 
