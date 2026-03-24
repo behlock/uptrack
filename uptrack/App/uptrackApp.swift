@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct PBTrackApp: App {
+struct uptrackApp: App {
     @StateObject private var appState = AppState()
     @StateObject private var updaterController = UpdaterController()
 

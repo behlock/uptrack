@@ -9,13 +9,13 @@ struct BezelContentView: View {
                 trackView(item)
             } else {
                 Text("no tracks")
-                    .font(PBTrackTheme.Fonts.body(12))
-                    .foregroundStyle(PBTrackTheme.Colors.textSecondary)
+                    .font(uptrackTheme.Fonts.body(12))
+                    .foregroundStyle(uptrackTheme.Colors.textSecondary)
             }
         }
         .frame(
-            width: PBTrackTheme.Dimensions.bezelWidth,
-            height: PBTrackTheme.Dimensions.bezelHeight
+            width: uptrackTheme.Dimensions.bezelWidth,
+            height: uptrackTheme.Dimensions.bezelHeight
         )
         .animation(.easeInOut(duration: 0.15), value: controller.currentIndex)
     }
@@ -27,8 +27,8 @@ struct BezelContentView: View {
             HStack {
                 Spacer()
                 Text("\(controller.currentIndex + 1) / \(controller.totalCount)")
-                    .font(PBTrackTheme.Fonts.mono(10))
-                    .foregroundStyle(PBTrackTheme.Colors.textTertiary)
+                    .font(uptrackTheme.Fonts.mono(10))
+                    .foregroundStyle(uptrackTheme.Colors.textTertiary)
             }
 
             HStack(spacing: 12) {
@@ -38,8 +38,8 @@ struct BezelContentView: View {
                         .resizable()
                         .aspectRatio(contentMode: .fill)
                         .frame(
-                            width: PBTrackTheme.Dimensions.bezelArtwork,
-                            height: PBTrackTheme.Dimensions.bezelArtwork
+                            width: uptrackTheme.Dimensions.bezelArtwork,
+                            height: uptrackTheme.Dimensions.bezelArtwork
                         )
                         .clipShape(RoundedRectangle(cornerRadius: 4))
                 }
@@ -47,13 +47,13 @@ struct BezelContentView: View {
                 // Track info
                 VStack(alignment: .leading, spacing: 3) {
                     Text((item.title ?? "unknown track").lowercased())
-                        .font(PBTrackTheme.Fonts.body(14))
-                        .foregroundStyle(PBTrackTheme.Colors.textPrimary)
+                        .font(uptrackTheme.Fonts.body(14))
+                        .foregroundStyle(uptrackTheme.Colors.textPrimary)
                         .lineLimit(1)
 
                     Text((item.artist ?? "unknown artist").lowercased())
-                        .font(PBTrackTheme.Fonts.body(12))
-                        .foregroundStyle(PBTrackTheme.Colors.textSecondary)
+                        .font(uptrackTheme.Fonts.body(12))
+                        .foregroundStyle(uptrackTheme.Colors.textSecondary)
                         .lineLimit(1)
 
                     AppNameLabel(appName: item.appName, appBundleId: item.appBundleId, fontSize: 10)
@@ -61,8 +61,8 @@ struct BezelContentView: View {
 
                     TimelineView(.periodic(from: .now, by: 30)) { _ in
                         Text(relativeTime(item.startedAt))
-                            .font(PBTrackTheme.Fonts.mono(10))
-                            .foregroundStyle(PBTrackTheme.Colors.textTertiary)
+                            .font(uptrackTheme.Fonts.mono(10))
+                            .foregroundStyle(uptrackTheme.Colors.textTertiary)
                     }
                 }
             }
@@ -71,10 +71,10 @@ struct BezelContentView: View {
 
             // Hint
             Text("tab / ↑↓ browse · ⏎ play · release to close")
-                .font(PBTrackTheme.Fonts.mono(9))
-                .foregroundStyle(PBTrackTheme.Colors.textTertiary)
+                .font(uptrackTheme.Fonts.mono(9))
+                .foregroundStyle(uptrackTheme.Colors.textTertiary)
         }
-        .padding(PBTrackTheme.Spacing.contentPadding)
+        .padding(uptrackTheme.Spacing.contentPadding)
         .contentTransition(.opacity)
     }
 

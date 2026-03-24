@@ -36,7 +36,7 @@ extension NSColor {
 
 // MARK: - Theme
 
-enum PBTrackTheme {
+enum uptrackTheme {
     enum Colors {
         static let background = Color(light: "#FAFAFA", dark: "#1A1A1A")
         static let surface = Color(light: "#FFFFFF", dark: "#242424")
@@ -94,7 +94,7 @@ enum PBTrackTheme {
 struct TEDivider: View {
     var body: some View {
         Rectangle()
-            .fill(PBTrackTheme.Colors.divider)
+            .fill(uptrackTheme.Colors.divider)
             .frame(height: 1)
     }
 }
@@ -114,19 +114,19 @@ struct AppNameLabel: View {
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(height: fontSize + 1)
-                    .foregroundStyle(PBTrackTheme.Colors.textTertiary)
+                    .foregroundStyle(uptrackTheme.Colors.textTertiary)
                 Text("spotify")
-                    .font(PBTrackTheme.Fonts.mono(fontSize))
-                    .foregroundStyle(PBTrackTheme.Colors.textTertiary)
+                    .font(uptrackTheme.Fonts.mono(fontSize))
+                    .foregroundStyle(uptrackTheme.Colors.textTertiary)
             }
         } else if lower.contains("music") || lower.contains("itunes") {
             Text("\u{f8ff} music")
-                .font(PBTrackTheme.Fonts.mono(fontSize))
-                .foregroundStyle(PBTrackTheme.Colors.textTertiary)
+                .font(uptrackTheme.Fonts.mono(fontSize))
+                .foregroundStyle(uptrackTheme.Colors.textTertiary)
         } else {
             Text(lower)
-                .font(PBTrackTheme.Fonts.mono(fontSize))
-                .foregroundStyle(PBTrackTheme.Colors.textTertiary)
+                .font(uptrackTheme.Fonts.mono(fontSize))
+                .foregroundStyle(uptrackTheme.Colors.textTertiary)
         }
     }
 }
@@ -161,7 +161,7 @@ struct HighlightButtonStyle: ButtonStyle {
             .background(
                 RoundedRectangle(cornerRadius: 4)
                     .fill(isHovered || configuration.isPressed
-                          ? PBTrackTheme.Colors.textPrimary.opacity(0.1)
+                          ? uptrackTheme.Colors.textPrimary.opacity(0.1)
                           : Color.clear)
             )
             .onHover { isHovered = $0 }
@@ -173,8 +173,8 @@ struct HighlightButtonStyle: ButtonStyle {
 extension View {
     func teLabelStyle() -> some View {
         self
-            .font(PBTrackTheme.Fonts.mono(10))
-            .foregroundStyle(PBTrackTheme.Colors.textTertiary)
+            .font(uptrackTheme.Fonts.mono(10))
+            .foregroundStyle(uptrackTheme.Colors.textTertiary)
             .textCase(.lowercase)
             .tracking(0.5)
     }

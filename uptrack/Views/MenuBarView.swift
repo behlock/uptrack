@@ -29,10 +29,10 @@ struct MenuBarView: View {
 
             Button(action: { clearAll() }) {
                 Text("clear all")
-                    .font(PBTrackTheme.Fonts.body(12))
-                    .foregroundStyle(PBTrackTheme.Colors.textSecondary)
+                    .font(uptrackTheme.Fonts.body(12))
+                    .foregroundStyle(uptrackTheme.Colors.textSecondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, PBTrackTheme.Spacing.rowHorizontal)
+                    .padding(.horizontal, uptrackTheme.Spacing.rowHorizontal)
                     .padding(.vertical, 6)
                     .contentShape(Rectangle())
             }
@@ -46,10 +46,10 @@ struct MenuBarView: View {
                 )
             }) {
                 Text("about")
-                    .font(PBTrackTheme.Fonts.body(12))
-                    .foregroundStyle(PBTrackTheme.Colors.textSecondary)
+                    .font(uptrackTheme.Fonts.body(12))
+                    .foregroundStyle(uptrackTheme.Colors.textSecondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, PBTrackTheme.Spacing.rowHorizontal)
+                    .padding(.horizontal, uptrackTheme.Spacing.rowHorizontal)
                     .padding(.vertical, 6)
                     .contentShape(Rectangle())
             }
@@ -58,17 +58,17 @@ struct MenuBarView: View {
 
             Button(action: { NSApplication.shared.terminate(nil) }) {
                 Text("quit")
-                    .font(PBTrackTheme.Fonts.body(12))
-                    .foregroundStyle(PBTrackTheme.Colors.textSecondary)
+                    .font(uptrackTheme.Fonts.body(12))
+                    .foregroundStyle(uptrackTheme.Colors.textSecondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, PBTrackTheme.Spacing.rowHorizontal)
+                    .padding(.horizontal, uptrackTheme.Spacing.rowHorizontal)
                     .padding(.vertical, 6)
                     .contentShape(Rectangle())
             }
             .buttonStyle(HighlightButtonStyle())
             .pointerCursor()
         }
-        .padding(.vertical, PBTrackTheme.Spacing.unit)
+        .padding(.vertical, uptrackTheme.Spacing.unit)
         .frame(width: 320)
         .background(VisualEffectBlur(material: .fullScreenUI, blendingMode: .behindWindow))
         .onAppear { loadTracks() }
@@ -101,13 +101,13 @@ struct MenuBarView: View {
     private func warningBanner(_ message: String) -> some View {
         HStack(spacing: 8) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundStyle(PBTrackTheme.Colors.warning)
+                .foregroundStyle(uptrackTheme.Colors.warning)
             Text(message)
-                .font(PBTrackTheme.Fonts.mono(11))
-                .foregroundStyle(PBTrackTheme.Colors.textSecondary)
+                .font(uptrackTheme.Fonts.mono(11))
+                .foregroundStyle(uptrackTheme.Colors.textSecondary)
         }
-        .padding(.horizontal, PBTrackTheme.Spacing.rowHorizontal)
-        .padding(.vertical, PBTrackTheme.Spacing.unit)
+        .padding(.horizontal, uptrackTheme.Spacing.rowHorizontal)
+        .padding(.vertical, uptrackTheme.Spacing.unit)
 
         TEDivider().padding(.vertical, 4)
     }
@@ -117,7 +117,7 @@ struct MenuBarView: View {
         VStack(alignment: .leading, spacing: 6) {
             Text("now playing")
                 .teLabelStyle()
-                .padding(.horizontal, PBTrackTheme.Spacing.rowHorizontal)
+                .padding(.horizontal, uptrackTheme.Spacing.rowHorizontal)
                 .padding(.bottom, 2)
 
             if let session = appState.currentSession {
@@ -126,32 +126,32 @@ struct MenuBarView: View {
 
                     liveIndicator
                 }
-                .padding(.horizontal, PBTrackTheme.Spacing.rowHorizontal)
+                .padding(.horizontal, uptrackTheme.Spacing.rowHorizontal)
             }
 
             if let track = appState.currentTrack {
                 VStack(alignment: .leading, spacing: 2) {
                     if let title = track.title {
                         Text(title.lowercased())
-                            .font(PBTrackTheme.Fonts.body(13))
-                            .foregroundStyle(PBTrackTheme.Colors.textPrimary)
+                            .font(uptrackTheme.Fonts.body(13))
+                            .foregroundStyle(uptrackTheme.Colors.textPrimary)
                             .lineLimit(1)
                     }
                     if let artist = track.artist {
                         Text(artist.lowercased())
-                            .font(PBTrackTheme.Fonts.body(12))
-                            .foregroundStyle(PBTrackTheme.Colors.textSecondary)
+                            .font(uptrackTheme.Fonts.body(12))
+                            .foregroundStyle(uptrackTheme.Colors.textSecondary)
                             .lineLimit(1)
                     }
                 }
-                .padding(.horizontal, PBTrackTheme.Spacing.rowHorizontal)
+                .padding(.horizontal, uptrackTheme.Spacing.rowHorizontal)
             }
 
             if let session = appState.currentSession {
                 Text(TimeFormatting.formatListeningDuration(since: session.startedAt))
-                    .font(PBTrackTheme.Fonts.mono(11))
-                    .foregroundStyle(PBTrackTheme.Colors.textTertiary)
-                    .padding(.horizontal, PBTrackTheme.Spacing.rowHorizontal)
+                    .font(uptrackTheme.Fonts.mono(11))
+                    .foregroundStyle(uptrackTheme.Colors.textTertiary)
+                    .padding(.horizontal, uptrackTheme.Spacing.rowHorizontal)
             }
         }
         .padding(.vertical, 4)
@@ -161,9 +161,9 @@ struct MenuBarView: View {
     private var sessionsSection: some View {
         if tracks.isEmpty {
             Text("no tracks yet")
-                .font(PBTrackTheme.Fonts.mono(11))
-                .foregroundStyle(PBTrackTheme.Colors.textTertiary)
-                .padding(.horizontal, PBTrackTheme.Spacing.rowHorizontal)
+                .font(uptrackTheme.Fonts.mono(11))
+                .foregroundStyle(uptrackTheme.Colors.textTertiary)
+                .padding(.horizontal, uptrackTheme.Spacing.rowHorizontal)
                 .padding(.vertical, 4)
         } else {
             ScrollView {
@@ -187,16 +187,16 @@ struct MenuBarView: View {
                 VStack(alignment: .leading, spacing: 1) {
                     HStack(spacing: 4) {
                         Text(track.title?.lowercased() ?? "unknown track")
-                            .font(PBTrackTheme.Fonts.body(12))
-                            .foregroundStyle(PBTrackTheme.Colors.textPrimary)
+                            .font(uptrackTheme.Fonts.body(12))
+                            .foregroundStyle(uptrackTheme.Colors.textPrimary)
                             .lineLimit(1)
                         if let artist = track.artist {
                             Text("—")
-                                .font(PBTrackTheme.Fonts.body(11))
-                                .foregroundStyle(PBTrackTheme.Colors.textTertiary)
+                                .font(uptrackTheme.Fonts.body(11))
+                                .foregroundStyle(uptrackTheme.Colors.textTertiary)
                             Text(artist.lowercased())
-                                .font(PBTrackTheme.Fonts.body(11))
-                                .foregroundStyle(PBTrackTheme.Colors.textSecondary)
+                                .font(uptrackTheme.Fonts.body(11))
+                                .foregroundStyle(uptrackTheme.Colors.textSecondary)
                                 .lineLimit(1)
                         }
                     }
@@ -206,7 +206,7 @@ struct MenuBarView: View {
 
                 AppNameLabel(appName: track.appName, appBundleId: track.appBundleId, fontSize: 9)
             }
-            .padding(.horizontal, PBTrackTheme.Spacing.rowHorizontal)
+            .padding(.horizontal, uptrackTheme.Spacing.rowHorizontal)
             .padding(.vertical, 5)
             .contentShape(Rectangle())
         }
@@ -239,11 +239,11 @@ struct MenuBarView: View {
     private var liveIndicator: some View {
         HStack(alignment: .center, spacing: 4) {
             Circle()
-                .fill(PBTrackTheme.Colors.accent)
+                .fill(uptrackTheme.Colors.accent)
                 .frame(width: 6, height: 6)
             Text("live")
-                .font(PBTrackTheme.Fonts.mono(13))
-                .foregroundStyle(PBTrackTheme.Colors.accent)
+                .font(uptrackTheme.Fonts.mono(13))
+                .foregroundStyle(uptrackTheme.Colors.accent)
         }
     }
 

@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>pbtrack</string>
+	<string>uptrack</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -13,7 +13,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>pbtrack</string>
+	<string>uptrack</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -23,9 +23,9 @@
 	<key>LSUIElement</key>
 	<true/>
 	<key>NSAppleEventsUsageDescription</key>
-	<string>pbtrack needs access to control Music and Spotify to play tracks from your history.</string>
+	<string>uptrack needs access to control Music to play tracks from your history.</string>
 	<key>SUFeedURL</key>
-	<string>https://behlock.github.io/pbtrack/appcast.xml</string>
+	<string>https://behlock.github.io/uptrack/appcast.xml</string>
 	<key>SUPublicEDKey</key>
 	<string>jNPt4Eid/3sp6mOMww36JmNt6v3vgyyJ28N6Q/zgvo4=</string>
 </dict>

@@ -7,33 +7,33 @@ struct AboutView: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            if let appIcon = NSApplication.shared.applicationIconImage {
+            if let appIcon = NSImage(named: "AppIcon") {
                 Image(nsImage: appIcon)
                     .resizable()
                     .frame(width: 64, height: 64)
             }
 
             VStack(spacing: 4) {
-                Text("pbtrack")
-                    .font(PBTrackTheme.Fonts.heading(16))
-                    .foregroundStyle(PBTrackTheme.Colors.textPrimary)
+                Text("uptrack")
+                    .font(uptrackTheme.Fonts.heading(16))
+                    .foregroundStyle(uptrackTheme.Colors.textPrimary)
 
                 if let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String {
                     Text("version \(version)")
-                        .font(PBTrackTheme.Fonts.mono(11))
-                        .foregroundStyle(PBTrackTheme.Colors.textTertiary)
+                        .font(uptrackTheme.Fonts.mono(11))
+                        .foregroundStyle(uptrackTheme.Colors.textTertiary)
                 }
             }
 
             Button(action: onCheckForUpdates) {
                 Text("check for updates")
-                    .font(PBTrackTheme.Fonts.body(12))
-                    .foregroundStyle(PBTrackTheme.Colors.textSecondary)
+                    .font(uptrackTheme.Fonts.body(12))
+                    .foregroundStyle(uptrackTheme.Colors.textSecondary)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 6)
                     .background(
                         RoundedRectangle(cornerRadius: 6)
-                            .stroke(PBTrackTheme.Colors.border, lineWidth: 1)
+                            .stroke(uptrackTheme.Colors.border, lineWidth: 1)
                     )
             }
             .buttonStyle(.plain)

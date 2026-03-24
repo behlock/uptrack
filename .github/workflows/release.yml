@@ -55,16 +55,16 @@ jobs:
       - name: Resolve SPM dependencies
         run: |
           xcodebuild -resolvePackageDependencies \
-            -project PBTrack.xcodeproj \
-            -scheme PBTrack
+            -project uptrack.xcodeproj \
+            -scheme uptrack
 
       - name: Archive
         run: |
           xcodebuild archive \
-            -project PBTrack.xcodeproj \
-            -scheme PBTrack \
+            -project uptrack.xcodeproj \
+            -scheme uptrack \
             -configuration Release \
-            -archivePath build/PBTrack.xcarchive \
+            -archivePath build/uptrack.xcarchive \
             CODE_SIGN_IDENTITY="Developer ID Application" \
             CODE_SIGN_STYLE=Manual \
             DEVELOPMENT_TEAM=MRU883JADA
@@ -72,24 +72,24 @@ jobs:
       - name: Export archive
         run: |
           xcodebuild -exportArchive \
-            -archivePath build/PBTrack.xcarchive \
+            -archivePath build/uptrack.xcarchive \
             -exportPath build/export \
             -exportOptionsPlist ExportOptions.plist
 
       - name: Verify code signing
         run: |
-          codesign -dv --verbose=4 build/export/PBTrack.app
+          codesign -dv --verbose=4 build/export/uptrack.app
 
       - name: Create zip for notarization
         run: |
-          ditto -c -k --keepParent build/export/PBTrack.app build/PBTrack.zip
+          ditto -c -k --keepParent build/export/uptrack.app build/uptrack.zip
 
       - name: Notarize
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APP_SPECIFIC_PASSWORD: ${{ secrets.APP_SPECIFIC_PASSWORD }}
         run: |
-          xcrun notarytool submit build/PBTrack.zip \
+          xcrun notarytool submit build/uptrack.zip \
             --apple-id "$APPLE_ID" \
             --password "$APP_SPECIFIC_PASSWORD" \
             --team-id MRU883JADA \
@@ -97,14 +97,14 @@ jobs:
 
       - name: Staple notarization ticket
         run: |
-          xcrun stapler staple build/export/PBTrack.app
-          xcrun stapler validate build/export/PBTrack.app
+          xcrun stapler staple build/export/uptrack.app
+          xcrun stapler validate build/export/uptrack.app
 
       - name: Create release zip
         run: |
           VERSION=${GITHUB_REF_NAME#v}
-          ditto -c -k --keepParent build/export/PBTrack.app "build/PBTrack-${VERSION}.zip"
-          echo "RELEASE_ZIP=build/PBTrack-${VERSION}.zip" >> $GITHUB_ENV
+          ditto -c -k --keepParent build/export/uptrack.app "build/uptrack-${VERSION}.zip"
+          echo "RELEASE_ZIP=build/uptrack-${VERSION}.zip" >> $GITHUB_ENV
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
 
       - name: Create GitHub Release
@@ -113,7 +113,7 @@ jobs:
           draft: true
           generate_release_notes: true
           files: ${{ env.RELEASE_ZIP }}
-          name: PBTrack v${{ env.VERSION }}
+          name: uptrack v${{ env.VERSION }}
 
       - name: Cleanup keychain
         if: always()

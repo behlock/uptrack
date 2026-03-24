@@ -24,13 +24,12 @@ final class BezelPanel: NSPanel {
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
 
         // Visual effect backdrop
+        let cornerRadius = uptrackTheme.Dimensions.bezelCornerRadius
         let visualEffect = NSVisualEffectView()
         visualEffect.material = .hudWindow
         visualEffect.state = .active
         visualEffect.blendingMode = .behindWindow
-        visualEffect.wantsLayer = true
-        visualEffect.layer?.cornerRadius = PBTrackTheme.Dimensions.bezelCornerRadius
-        visualEffect.layer?.masksToBounds = true
+        visualEffect.maskImage = Self.roundedMaskImage(cornerRadius: cornerRadius)
 
         contentView.translatesAutoresizingMaskIntoConstraints = false
         visualEffect.addSubview(contentView)
@@ -43,8 +42,8 @@ final class BezelPanel: NSPanel {
 
         self.contentView = visualEffect
         setContentSize(NSSize(
-            width: PBTrackTheme.Dimensions.bezelWidth,
-            height: PBTrackTheme.Dimensions.bezelHeight
+            width: uptrackTheme.Dimensions.bezelWidth,
+            height: uptrackTheme.Dimensions.bezelHeight
         ))
     }
 
@@ -78,6 +77,23 @@ final class BezelPanel: NSPanel {
         if !flags.contains(.option) {
             onDismiss?()
         }
+    }
+
+    private static func roundedMaskImage(cornerRadius: CGFloat) -> NSImage {
+        let edgeLength = 2.0 * cornerRadius + 1.0
+        let size = NSSize(width: edgeLength, height: edgeLength)
+        let image = NSImage(size: size, flipped: false) { rect in
+            let path = NSBezierPath(roundedRect: rect, xRadius: cornerRadius, yRadius: cornerRadius)
+            NSColor.black.set()
+            path.fill()
+            return true
+        }
+        image.capInsets = NSEdgeInsets(
+            top: cornerRadius, left: cornerRadius,
+            bottom: cornerRadius, right: cornerRadius
+        )
+        image.resizingMode = .stretch
+        return image
     }
 
     func centerOnCurrentScreen() {
