@@ -41,8 +41,13 @@ struct MenuBarView: View {
             .buttonStyle(HighlightButtonStyle())
             .pointerCursor()
 
-            Button(action: { updaterController.checkForUpdates() }) {
-                Text("check for updates")
+            Button(action: {
+                AboutWindowController.show(
+                    onCheckForUpdates: { updaterController.checkForUpdates() },
+                    canCheckForUpdates: updaterController.canCheckForUpdates
+                )
+            }) {
+                Text("about")
                     .font(PBTrackTheme.Fonts.body(12))
                     .foregroundStyle(PBTrackTheme.Colors.textSecondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -52,7 +57,6 @@ struct MenuBarView: View {
             }
             .buttonStyle(HighlightButtonStyle())
             .pointerCursor()
-            .disabled(!updaterController.canCheckForUpdates)
 
             Button(action: { NSApplication.shared.terminate(nil) }) {
                 Text("quit")

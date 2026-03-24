@@ -79,7 +79,6 @@ jobs:
       - name: Verify code signing
         run: |
           codesign -dv --verbose=4 build/export/PBTrack.app
-          spctl -a -v build/export/PBTrack.app
 
       - name: Create zip for notarization
         run: |
@@ -100,6 +99,10 @@ jobs:
         run: |
           xcrun stapler staple build/export/PBTrack.app
           xcrun stapler validate build/export/PBTrack.app
+
+      - name: Verify notarized app
+        run: |
+          spctl -a -v build/export/PBTrack.app
 
       - name: Create release zip
         run: |

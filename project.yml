@@ -30,9 +30,9 @@ targets:
       path: PBTrack/Info.plist
       properties:
         LSUIElement: true
-        NSAppleEventsUsageDescription: "PBTrack needs access to control Music to play tracks from your history."
-        CFBundleDisplayName: PBTrack
-        CFBundleName: PBTrack
+        NSAppleEventsUsageDescription: "pbtrack needs access to control Music to play tracks from your history."
+        CFBundleDisplayName: pbtrack
+        CFBundleName: pbtrack
         CFBundleShortVersionString: "1.0.0"
         CFBundleVersion: "1"
         SUFeedURL: "https://behlock.github.io/pbtrack/appcast.xml"
