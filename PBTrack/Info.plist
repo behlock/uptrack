@@ -24,5 +24,9 @@
 	<true/>
 	<key>NSAppleEventsUsageDescription</key>
 	<string>PBTrack needs access to control Music to play tracks from your history.</string>
+	<key>SUFeedURL</key>
+	<string>https://behlock.github.io/pbtrack/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>jNPt4Eid/3sp6mOMww36JmNt6v3vgyyJ28N6Q/zgvo4=</string>
 </dict>
 </plist>

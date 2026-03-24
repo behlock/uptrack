@@ -12,6 +12,9 @@ packages:
   HotKey:
     url: https://github.com/soffes/HotKey
     from: "0.2.1"
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    from: "2.1.0"
 
 settings:
   base:
@@ -32,6 +35,8 @@ targets:
         CFBundleName: PBTrack
         CFBundleShortVersionString: "1.0.0"
         CFBundleVersion: "1"
+        SUFeedURL: "https://behlock.github.io/pbtrack/appcast.xml"
+        SUPublicEDKey: "jNPt4Eid/3sp6mOMww36JmNt6v3vgyyJ28N6Q/zgvo4="
     entitlements:
       path: PBTrack/PBTrack.entitlements
       properties:
@@ -56,5 +61,6 @@ targets:
     dependencies:
       - package: GRDB
       - package: HotKey
+      - package: Sparkle
       - sdk: CoreAudio.framework
       - sdk: ServiceManagement.framework

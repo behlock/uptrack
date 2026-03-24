@@ -2,6 +2,7 @@ import SwiftUI
 
 struct MenuBarView: View {
     @EnvironmentObject var appState: AppState
+    @EnvironmentObject var updaterController: UpdaterController
     @State private var tracks: [BezelTrackItem] = []
 
     var body: some View {
@@ -39,6 +40,19 @@ struct MenuBarView: View {
             }
             .buttonStyle(HighlightButtonStyle())
             .pointerCursor()
+
+            Button(action: { updaterController.checkForUpdates() }) {
+                Text("check for updates")
+                    .font(PBTrackTheme.Fonts.body(12))
+                    .foregroundStyle(PBTrackTheme.Colors.textSecondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, PBTrackTheme.Spacing.rowHorizontal)
+                    .padding(.vertical, 6)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(HighlightButtonStyle())
+            .pointerCursor()
+            .disabled(!updaterController.canCheckForUpdates)
 
             Button(action: { NSApplication.shared.terminate(nil) }) {
                 Text("quit")
