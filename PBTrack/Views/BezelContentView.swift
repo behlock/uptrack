@@ -59,9 +59,11 @@ struct BezelContentView: View {
                     AppNameLabel(appName: item.appName, appBundleId: item.appBundleId, fontSize: 10)
                         .lineLimit(1)
 
-                    Text(relativeTime(item.startedAt))
-                        .font(PBTrackTheme.Fonts.mono(10))
-                        .foregroundStyle(PBTrackTheme.Colors.textTertiary)
+                    TimelineView(.periodic(from: .now, by: 30)) { _ in
+                        Text(relativeTime(item.startedAt))
+                            .font(PBTrackTheme.Fonts.mono(10))
+                            .foregroundStyle(PBTrackTheme.Colors.textTertiary)
+                    }
                 }
             }
 

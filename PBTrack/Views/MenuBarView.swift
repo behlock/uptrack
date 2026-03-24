@@ -4,6 +4,7 @@ struct MenuBarView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var updaterController: UpdaterController
     @State private var tracks: [BezelTrackItem] = []
+    @State private var showClearConfirmation = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -21,13 +22,10 @@ struct MenuBarView: View {
 
             if appState.isPlaying {
                 nowPlayingSection
-                TEDivider().padding(.vertical, 6)
             }
 
             // Scrollable session history
             sessionsSection
-
-            TEDivider().padding(.vertical, 4)
 
             Button(action: { clearAll() }) {
                 Text("clear all")
@@ -75,6 +73,12 @@ struct MenuBarView: View {
         .background(VisualEffectBlur(material: .fullScreenUI, blendingMode: .behindWindow))
         .onAppear { loadTracks() }
         .onChange(of: appState.isPlaying) { loadTracks() }
+        .alert("clear all history?", isPresented: $showClearConfirmation) {
+            Button("clear all", role: .destructive) { performClearAll() }
+            Button("cancel", role: .cancel) {}
+        } message: {
+            Text("this will permanently delete all sessions and tracks.")
+        }
     }
 
     private func loadTracks() {
@@ -82,7 +86,12 @@ struct MenuBarView: View {
     }
 
     private func clearAll() {
+        showClearConfirmation = true
+    }
+
+    private func performClearAll() {
         try? appState.databaseManager?.deleteAllSessions()
+        appState.sessionManager?.resetAfterClearAll()
         tracks = []
     }
 

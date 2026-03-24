@@ -95,10 +95,10 @@ final class SessionManager: ObservableObject {
         handlePause()
     }
 
-    func handleDeviceChange(uid: String, name: String) {
-        guard currentSession != nil, lastDeviceUID != uid else { return }
-        // Device change during active playback triggers session close + new session
-        // This will be handled naturally on the next NowPlaying update
+    /// Reset state after all sessions have been deleted (e.g. "clear all").
+    func resetAfterClearAll() {
+        resetState()
+        isPlaying = false
     }
 
     // MARK: - Private

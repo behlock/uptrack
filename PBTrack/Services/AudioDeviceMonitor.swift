@@ -6,6 +6,9 @@ final class AudioDeviceMonitor: ObservableObject {
     @Published var currentDeviceName: String = ""
     @Published var currentDeviceUID: String = ""
 
+    // nonisolated(unsafe) is required because AudioObjectAddPropertyListenerBlock captures
+    // this block outside of Swift's concurrency model. Safe because the block is only set/cleared
+    // from @MainActor methods and dispatched on DispatchQueue.main.
     private nonisolated(unsafe) var listenerBlock: AudioObjectPropertyListenerBlock?
 
     func startMonitoring() {

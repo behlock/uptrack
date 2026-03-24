@@ -74,7 +74,8 @@ final class BezelPanel: NSPanel {
     override func flagsChanged(with event: NSEvent) {
         let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
             .subtracting([.capsLock, .function, .numericPad])
-        if !flags.contains(.shift) && !flags.contains(.option) {
+        // Dismiss when Option is released (the primary hotkey modifier)
+        if !flags.contains(.option) {
             onDismiss?()
         }
     }

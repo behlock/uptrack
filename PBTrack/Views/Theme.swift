@@ -20,9 +20,11 @@ extension Color {
 extension NSColor {
     convenience init(hex: String) {
         let hex = hex.trimmingCharacters(in: CharacterSet(charactersIn: "#"))
+        assert(hex.count == 6, "NSColor(hex:) expects a 6-character hex string, got: \(hex)")
         let scanner = Scanner(string: hex)
         var rgb: UInt64 = 0
-        scanner.scanHexInt64(&rgb)
+        let success = scanner.scanHexInt64(&rgb)
+        assert(success, "NSColor(hex:) failed to parse hex string: \(hex)")
         self.init(
             red: CGFloat((rgb >> 16) & 0xFF) / 255,
             green: CGFloat((rgb >> 8) & 0xFF) / 255,

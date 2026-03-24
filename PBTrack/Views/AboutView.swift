@@ -51,6 +51,14 @@ final class AboutWindowController {
 
     static func show(onCheckForUpdates: @escaping () -> Void, canCheckForUpdates: Bool) {
         if let existing = window, existing.isVisible {
+            // Update the view with fresh state before bringing to front
+            let aboutView = AboutView(
+                onCheckForUpdates: onCheckForUpdates,
+                canCheckForUpdates: canCheckForUpdates
+            )
+            let hostingView = NSHostingView(rootView: aboutView)
+            hostingView.setFrameSize(hostingView.fittingSize)
+            existing.contentView = hostingView
             existing.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
             return
