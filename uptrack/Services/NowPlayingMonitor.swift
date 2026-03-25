@@ -47,9 +47,9 @@ private struct DistributedMediaInfo: Sendable {
         let notifName = notification.name.rawValue
         let appInfo = knownApps[notifName]
 
-        let title = userInfo["Name"] as? String
-        let artist = userInfo["Artist"] as? String
-        let album = userInfo["Album"] as? String
+        let title = truncateMetadata(userInfo["Name"] as? String)
+        let artist = truncateMetadata(userInfo["Artist"] as? String)
+        let album = truncateMetadata(userInfo["Album"] as? String)
         let playerState = userInfo["Player State"] as? String
 
         var durationSeconds: Double?
@@ -62,7 +62,7 @@ private struct DistributedMediaInfo: Sendable {
         if let p = userInfo["Playback Position"] as? Double { elapsedSeconds = p }
         else if let p = userInfo["Player Position"] as? Double { elapsedSeconds = p }
 
-        let trackURI = userInfo["Track ID"] as? String
+        let trackURI = truncateMetadata(userInfo["Track ID"] as? String)
 
         return DistributedMediaInfo(
             bundleId: appInfo?.bundleId ?? "unknown",

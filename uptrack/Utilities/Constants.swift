@@ -27,6 +27,12 @@ enum Constants {
     /// JPEG compression quality for artwork thumbnails
     static let artworkJPEGQuality: CGFloat = 0.7
 
+    /// Maximum length for metadata strings from external sources
+    static let maxMetadataStringLength = 1000
+
+    /// Maximum artwork data size before processing (5 MB)
+    static let maxArtworkDataSize = 5 * 1024 * 1024
+
     /// Debug log file
     static var debugLogURL: URL {
         databaseDirectoryURL.appendingPathComponent("debug.log")
@@ -70,12 +76,38 @@ func debugLog(_ message: String) {
 /// Sanitize a string for safe interpolation into an AppleScript string literal.
 /// Strips characters that could escape or terminate an AppleScript string.
 private func sanitizeForAppleScript(_ value: String) -> String {
-    value
+    var sanitized = value
         .replacingOccurrences(of: "\\", with: "\\\\")
         .replacingOccurrences(of: "\"", with: "\\\"")
-        .replacingOccurrences(of: "\r", with: "")
-        .replacingOccurrences(of: "\n", with: "")
         .replacingOccurrences(of: "\u{00AC}", with: "") // ¬ AppleScript line continuation
+    // Strip all control characters (null bytes, tabs, newlines, carriage returns, etc.)
+    sanitized.unicodeScalars.removeAll { CharacterSet.controlCharacters.contains($0) }
+    return sanitized
+}
+
+/// Validate that a string is a well-formed Spotify track URI
+func isValidSpotifyURI(_ uri: String) -> Bool {
+    uri.range(of: #"^spotify:track:[A-Za-z0-9]+$"#, options: .regularExpression) != nil
+}
+
+/// Truncate a metadata string to prevent storage of excessively long values
+func truncateMetadata(_ value: String?) -> String? {
+    guard let value, !value.isEmpty else { return value }
+    if value.count <= Constants.maxMetadataStringLength { return value }
+    return String(value.prefix(Constants.maxMetadataStringLength))
+}
+
+/// Execute an AppleScript on a background queue to prevent main thread blocking
+private func executeAppleScript(_ source: String) {
+    DispatchQueue.global(qos: .userInitiated).async {
+        var error: NSDictionary?
+        if let appleScript = NSAppleScript(source: source) {
+            appleScript.executeAndReturnError(&error)
+            if let error {
+                debugLog("[AppleScript] Error: \(error)")
+            }
+        }
+    }
 }
 
 /// Safely execute an AppleScript search in Apple Music
@@ -91,10 +123,7 @@ func playTrackInAppleMusic(title: String) {
         end tell
         """
 
-    var error: NSDictionary?
-    if let appleScript = NSAppleScript(source: script) {
-        appleScript.executeAndReturnError(&error)
-    }
+    executeAppleScript(script)
 }
 
 /// Open a Spotify search via URL scheme
@@ -108,6 +137,10 @@ func playTrackInSpotify(title: String, artist: String?) {
 
 /// Play a specific track in Spotify by URI via AppleScript
 func playTrackInSpotifyByURI(uri: String) {
+    guard isValidSpotifyURI(uri) else {
+        debugLog("[Spotify] Rejected invalid URI: \(uri)")
+        return
+    }
     let escaped = sanitizeForAppleScript(uri)
     let script = """
         tell application "Spotify"
@@ -115,11 +148,5 @@ func playTrackInSpotifyByURI(uri: String) {
         end tell
         """
     debugLog("[Spotify] Playing URI: \(uri)")
-    var error: NSDictionary?
-    if let appleScript = NSAppleScript(source: script) {
-        appleScript.executeAndReturnError(&error)
-        if let error {
-            debugLog("[Spotify] AppleScript error: \(error)")
-        }
-    }
+    executeAppleScript(script)
 }

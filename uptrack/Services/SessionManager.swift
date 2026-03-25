@@ -99,7 +99,11 @@ final class SessionManager: ObservableObject {
     func patchCurrentTrackURI(_ uri: String) {
         guard let track = currentTrack, let trackId = track.id, track.sourceURI == nil else { return }
         currentTrack?.sourceURI = uri
-        try? database.updateTrackEntrySourceURI(id: trackId, sourceURI: uri)
+        do {
+            try database.updateTrackEntrySourceURI(id: trackId, sourceURI: uri)
+        } catch {
+            debugLog("[SessionManager] Failed to update track URI: \(error)")
+        }
     }
 
     /// Reset state after all sessions have been deleted (e.g. "clear all").
@@ -115,7 +119,11 @@ final class SessionManager: ObservableObject {
 
         isPlaying = false
         if let sessionId = currentSession?.id {
-            try? database.updateSessionActive(id: sessionId, isActive: false)
+            do {
+                try database.updateSessionActive(id: sessionId, isActive: false)
+            } catch {
+                debugLog("[SessionManager] Failed to update session active state: \(error)")
+            }
             currentSession?.isActive = false
         }
 
@@ -167,10 +175,17 @@ final class SessionManager: ObservableObject {
         let duration = Date().timeIntervalSince(session.startedAt)
 
         if duration < Constants.minimumSessionDurationSeconds {
-            // Discard very short sessions
-            try? database.deleteSession(id: sessionId)
+            do {
+                try database.deleteSession(id: sessionId)
+            } catch {
+                debugLog("[SessionManager] Failed to delete short session: \(error)")
+            }
         } else {
-            try? database.closeSession(id: sessionId, endedAt: Date())
+            do {
+                try database.closeSession(id: sessionId, endedAt: Date())
+            } catch {
+                debugLog("[SessionManager] Failed to close session: \(error)")
+            }
         }
 
         resetState()
@@ -201,7 +216,15 @@ final class SessionManager: ObservableObject {
         }
         debugLog("[SessionManager] startNewTrack: sessionId=\(sessionId) title=\(title ?? "nil") artist=\(artist ?? "nil")")
 
-        let processedArtwork = artworkData.flatMap { resizeArtwork($0) }
+        let processedArtwork: Data?
+        if let artwork = artworkData, artwork.count <= Constants.maxArtworkDataSize {
+            processedArtwork = resizeArtwork(artwork)
+        } else {
+            if let artwork = artworkData {
+                debugLog("[SessionManager] Artwork data too large (\(artwork.count) bytes), skipping")
+            }
+            processedArtwork = nil
+        }
 
         let entry = TrackEntry(
             sessionId: sessionId,
@@ -235,7 +258,11 @@ final class SessionManager: ObservableObject {
             return
         }
 
-        try? database.updateTrackEntryElapsed(id: trackId, elapsedSeconds: elapsedSeconds)
+        do {
+            try database.updateTrackEntryElapsed(id: trackId, elapsedSeconds: elapsedSeconds)
+        } catch {
+            debugLog("[SessionManager] Failed to update track elapsed time: \(error)")
+        }
     }
 
     private func resizeArtwork(_ data: Data) -> Data? {
