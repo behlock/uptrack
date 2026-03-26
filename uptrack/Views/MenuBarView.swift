@@ -20,10 +20,6 @@ struct MenuBarView: View {
                 )
             }
 
-            if appState.isPlaying {
-                nowPlayingSection
-            }
-
             // Scrollable session history
             sessionsSection
 
@@ -125,51 +121,6 @@ struct MenuBarView: View {
     }
 
     @ViewBuilder
-    private var nowPlayingSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("now playing")
-                .teLabelStyle()
-                .padding(.horizontal, uptrackTheme.Spacing.rowHorizontal)
-                .padding(.bottom, 2)
-
-            if let session = appState.currentSession {
-                HStack(alignment: .center, spacing: 6) {
-                    AppNameLabel(appName: session.appName, appBundleId: session.appBundleId, fontSize: 13)
-
-                    liveIndicator
-                }
-                .padding(.horizontal, uptrackTheme.Spacing.rowHorizontal)
-            }
-
-            if let track = appState.currentTrack {
-                VStack(alignment: .leading, spacing: 2) {
-                    if let title = track.title {
-                        Text(title.lowercased())
-                            .font(uptrackTheme.Fonts.body(13))
-                            .foregroundStyle(uptrackTheme.Colors.textPrimary)
-                            .lineLimit(1)
-                    }
-                    if let artist = track.artist {
-                        Text(artist.lowercased())
-                            .font(uptrackTheme.Fonts.body(12))
-                            .foregroundStyle(uptrackTheme.Colors.textSecondary)
-                            .lineLimit(1)
-                    }
-                }
-                .padding(.horizontal, uptrackTheme.Spacing.rowHorizontal)
-            }
-
-            if let session = appState.currentSession {
-                Text(TimeFormatting.formatListeningDuration(since: session.startedAt))
-                    .font(uptrackTheme.Fonts.mono(11))
-                    .foregroundStyle(uptrackTheme.Colors.textTertiary)
-                    .padding(.horizontal, uptrackTheme.Spacing.rowHorizontal)
-            }
-        }
-        .padding(.vertical, 4)
-    }
-
-    @ViewBuilder
     private var sessionsSection: some View {
         if tracks.isEmpty {
             Text("no tracks yet")
@@ -248,15 +199,5 @@ struct MenuBarView: View {
 
     // MARK: - Helpers
 
-    private var liveIndicator: some View {
-        HStack(alignment: .center, spacing: 4) {
-            Circle()
-                .fill(uptrackTheme.Colors.accent)
-                .frame(width: 6, height: 6)
-            Text("live")
-                .font(uptrackTheme.Fonts.mono(13))
-                .foregroundStyle(uptrackTheme.Colors.accent)
-        }
-    }
 
 }
