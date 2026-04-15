@@ -85,45 +85,6 @@
       opacity: 1;
     }
 
-    footer {
-      margin-top: 2rem;
-      padding-top: 2rem;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 1rem;
-      align-items: center;
-    }
-
-    footer a {
-      color: var(--text);
-      text-decoration: none;
-      opacity: 0.6;
-      transition: opacity 200ms;
-    }
-
-    footer a:hover {
-      opacity: 1;
-      text-decoration: underline;
-    }
-
-    .theme-toggle {
-      background: none;
-      border: none;
-      cursor: pointer;
-      padding: 0;
-      margin-left: auto;
-      opacity: 0.6;
-      transition: opacity 200ms;
-    }
-
-    .theme-toggle:hover {
-      opacity: 1;
-    }
-
-    .theme-toggle svg {
-      display: block;
-    }
-
     @media (min-width: 640px) {
       body {
         font-size: 1rem;
@@ -143,12 +104,6 @@
       <p><a class="download-link" href="https://github.com/behlock/uptrack/releases/latest">Download Latest Release</a></p>
       <p class="meta">Requires macOS 14.0+</p>
     </div>
-    <footer>
-      <a href="https://github.com/behlock/uptrack">GitHub</a>
-      <button class="theme-toggle" aria-label="Randomize theme color">
-        <img src="icon.png" alt="" width="24" height="24" style="border-radius: 50%;">
-      </button>
-    </footer>
   </div>
   <script>
     (function () {
@@ -199,12 +154,6 @@
       if (stored && colors.indexOf(stored) !== -1) {
         applyColor(stored);
       }
-
-      document.querySelector('.theme-toggle').addEventListener('click', function () {
-        var next = colors[Math.floor(Math.random() * colors.length)];
-        applyColor(next);
-        localStorage.setItem(key, next);
-      });
     })();
   </script>
 </body>
