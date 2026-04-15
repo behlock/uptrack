@@ -19,12 +19,13 @@ extension Color {
 
 extension NSColor {
     convenience init(hex: String) {
-        let hex = hex.trimmingCharacters(in: CharacterSet(charactersIn: "#"))
-        assert(hex.count == 6, "NSColor(hex:) expects a 6-character hex string, got: \(hex)")
-        let scanner = Scanner(string: hex)
+        let trimmed = hex.trimmingCharacters(in: CharacterSet(charactersIn: "#"))
         var rgb: UInt64 = 0
-        let success = scanner.scanHexInt64(&rgb)
-        assert(success, "NSColor(hex:) failed to parse hex string: \(hex)")
+        let parsed = trimmed.count == 6 && Scanner(string: trimmed).scanHexInt64(&rgb)
+        if !parsed {
+            assertionFailure("NSColor(hex:) expects a 6-character hex string, got: \(hex)")
+            rgb = 0xFF00FF // magenta fallback in release builds — visible but non-crashing
+        }
         self.init(
             red: CGFloat((rgb >> 16) & 0xFF) / 255,
             green: CGFloat((rgb >> 8) & 0xFF) / 255,

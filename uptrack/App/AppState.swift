@@ -68,4 +68,11 @@ final class AppState: ObservableObject {
         sm.$isPlaying.assign(to: &$isPlaying)
     }
 
+    /// Release system-level resources (notification observers, CoreAudio listeners, hotkeys).
+    /// Intended to be called from AppDelegate.applicationWillTerminate.
+    func shutdown() {
+        nowPlayingMonitor?.stop()
+        audioDeviceMonitor.stopMonitoring()
+        hotkeyManager.stop()
+    }
 }

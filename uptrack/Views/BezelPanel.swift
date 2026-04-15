@@ -49,17 +49,26 @@ final class BezelPanel: NSPanel {
 
     override var canBecomeKey: Bool { true }
 
+    deinit {
+        pollTimer?.invalidate()
+    }
+
     // Polling-based key-hold detection. We can't rely on keyDown alone:
     // when the user's global hotkey includes Tab or an arrow, the Carbon
     // hotkey handler consumes those keyDown events even while our panel
     // is key, so holding the key never reaches -keyDown:. Polling
     // CGEventSource.keyState lets us detect the physical hold state
     // regardless of who consumed the event.
-    private var pollTimer: Timer?
+    // nonisolated(unsafe) so the NSPanel nonisolated deinit can invalidate the timer.
+    // In practice pollTimer is only mutated from AppKit main-thread callbacks (startKeyPolling
+    // is called from BezelController, stopKeyPolling from main-thread events / dismiss).
+    private nonisolated(unsafe) var pollTimer: Timer?
     private var heldKey: UInt16?
     private var holdElapsed: TimeInterval = 0
     private var nextFireAt: TimeInterval = 0
-    private let pollInterval: TimeInterval = 0.02
+    // 30 Hz polling: still well under a human key-hold latency threshold (~50 ms) but
+    // 33% fewer ticks/CGEventSource.keyState calls than the previous 50 Hz loop.
+    private let pollInterval: TimeInterval = 0.033
     private let initialRepeatDelay: TimeInterval = 0.35
     private let repeatInterval: TimeInterval = 0.08
 
@@ -86,7 +95,9 @@ final class BezelPanel: NSPanel {
     func startKeyPolling() {
         stopKeyPolling()
         pollTimer = Timer.scheduledTimer(withTimeInterval: pollInterval, repeats: true) { [weak self] _ in
-            self?.pollTick()
+            // Timer fires on the main run loop, but its closure is nonisolated from the
+            // compiler's perspective. Hop explicitly to @MainActor to call pollTick().
+            Task { @MainActor in self?.pollTick() }
         }
     }
 

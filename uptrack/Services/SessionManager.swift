@@ -14,6 +14,9 @@ final class SessionManager: ObservableObject {
     private var lastTrackTitle: String?
     private var lastTrackArtist: String?
     private var trackStartedAt: Date?
+    /// True between scheduling a new track entry and its async persistence completing.
+    /// Prevents duplicate track inserts while artwork is being resized off-main.
+    private var pendingTrackStart = false
 
     init(database: DatabaseManager) {
         self.database = database
@@ -71,7 +74,7 @@ final class SessionManager: ObservableObject {
         let trackChanged = (title != lastTrackTitle || artist != lastTrackArtist)
             && (title != nil || artist != nil)
 
-        if trackChanged || currentTrack == nil {
+        if trackChanged || (currentTrack == nil && !pendingTrackStart) {
             debugLog("[SessionManager] Track changed: \(title ?? "nil") - \(artist ?? "nil"), saving...")
             finalizeCurrentTrack(elapsed: elapsed)
             startNewTrack(
@@ -199,6 +202,7 @@ final class SessionManager: ObservableObject {
         lastTrackTitle = nil
         lastTrackArtist = nil
         trackStartedAt = nil
+        pendingTrackStart = false
         cancelPauseTimer()
     }
 
@@ -216,33 +220,49 @@ final class SessionManager: ObservableObject {
         }
         debugLog("[SessionManager] startNewTrack: sessionId=\(sessionId) title=\(title ?? "nil") artist=\(artist ?? "nil")")
 
-        let processedArtwork: Data?
-        if let artwork = artworkData, artwork.count <= Constants.maxArtworkDataSize {
-            processedArtwork = resizeArtwork(artwork)
-        } else {
-            if let artwork = artworkData {
-                debugLog("[SessionManager] Artwork data too large (\(artwork.count) bytes), skipping")
-            }
-            processedArtwork = nil
+        pendingTrackStart = true
+
+        let startedAt = Date()
+        let db = database
+        let artworkTooLarge = (artworkData?.count ?? 0) > Constants.maxArtworkDataSize
+        if artworkTooLarge, let artwork = artworkData {
+            debugLog("[SessionManager] Artwork data too large (\(artwork.count) bytes), skipping")
         }
+        let artworkForResize = artworkTooLarge ? nil : artworkData
 
-        let entry = TrackEntry(
-            sessionId: sessionId,
-            title: title,
-            artist: artist,
-            album: album,
-            artworkData: processedArtwork,
-            startedAt: Date(),
-            durationSeconds: duration,
-            sourceURI: sourceURI
-        )
+        Task.detached(priority: .utility) { [weak self] in
+            let processedArtwork = artworkForResize.flatMap { Self.resizeArtwork($0) }
 
-        do {
-            let saved = try database.addTrackEntry(entry)
-            currentTrack = saved
-            trackStartedAt = Date()
-        } catch {
-            debugLog("[SessionManager] Failed to add track entry: \(error)")
+            let entry = TrackEntry(
+                sessionId: sessionId,
+                title: title,
+                artist: artist,
+                album: album,
+                artworkData: processedArtwork,
+                startedAt: startedAt,
+                durationSeconds: duration,
+                sourceURI: sourceURI
+            )
+
+            let saved: TrackEntry?
+            do {
+                saved = try db.addTrackEntry(entry)
+            } catch {
+                debugLog("[SessionManager] Failed to add track entry: \(error)")
+                saved = nil
+            }
+
+            await MainActor.run {
+                guard let self else { return }
+                // If state was reset (e.g. "clear all" or session closed) while the
+                // resize/insert was in flight, drop the result.
+                guard self.pendingTrackStart else { return }
+                self.pendingTrackStart = false
+                if let saved {
+                    self.currentTrack = saved
+                    self.trackStartedAt = startedAt
+                }
+            }
         }
     }
 
@@ -265,8 +285,11 @@ final class SessionManager: ObservableObject {
         }
     }
 
-    private func resizeArtwork(_ data: Data) -> Data? {
-        guard let image = NSImage(data: data) else { return nil }
+    nonisolated static func resizeArtwork(_ data: Data) -> Data? {
+        guard let image = NSImage(data: data) else {
+            debugLog("[SessionManager] resizeArtwork: NSImage(data:) returned nil")
+            return nil
+        }
 
         let pixelSize = Int(Constants.artworkThumbnailSize)
         guard let rep = NSBitmapImageRep(

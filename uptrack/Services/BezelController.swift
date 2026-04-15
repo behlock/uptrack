@@ -21,24 +21,28 @@ final class BezelController: ObservableObject {
     var totalCount: Int { items.count }
 
     func show() {
-        // If already visible, treat as "next track"
-        if panel?.isVisible == true {
-            navigateUp()
-            return
-        }
+        let wasVisible = panel?.isVisible == true
 
+        // Always refresh from DB so re-opens reflect tracks added since last show
         do {
-            let tracks = try databaseManager.recentTrackEntriesWithContext(limit: 50)
+            let tracks = try databaseManager.recentTrackEntriesWithContext(limit: Constants.recentTrackLimit)
             guard !tracks.isEmpty else {
                 debugLog("[BezelController] No tracks to show")
                 return
             }
             items = tracks
-            currentIndex = 0
         } catch {
             debugLog("[BezelController] Failed to load tracks: \(error)")
             return
         }
+
+        if wasVisible {
+            // Already visible: treat repeat hotkey as "next track"
+            navigateUp()
+            return
+        }
+
+        currentIndex = 0
 
         if panel == nil {
             createPanel()
@@ -68,23 +72,9 @@ final class BezelController: ObservableObject {
     }
 
     func playCurrentTrack() {
-        guard let item = currentItem, let title = item.title else { return }
+        guard let item = currentItem else { return }
         dismiss()
-
-        let bundleId = item.appBundleId.lowercased()
-        if bundleId.contains("spotify") {
-            playInSpotify(item)
-        } else {
-            playTrackInAppleMusic(title: title)
-        }
-    }
-
-    private func playInSpotify(_ item: BezelTrackItem) {
-        if let uri = item.sourceURI {
-            playTrackInSpotifyByURI(uri: uri)
-        } else if let title = item.title {
-            playTrackInSpotify(title: title, artist: item.artist)
-        }
+        playBezelTrack(item)
     }
 
     private func createPanel() {

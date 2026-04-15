@@ -102,7 +102,21 @@ final class NowPlayingMonitor: ObservableObject {
         case `default`, distributed, workspace
     }
     private var observations: [(center: ObserverCenter, token: NSObjectProtocol)] = []
-    private var mediaRemoteWorking = false
+
+    /// Which metadata source is currently authoritative.
+    ///
+    /// Transitions are one-way: `.awaitingProbe` → `.mediaRemote` the first time MediaRemote
+    /// delivers real data. Once we've committed to MediaRemote we never fall back, and
+    /// distributed notifications are demoted to URI-only patching (they carry Spotify's
+    /// `spotify:track:*` URI which MediaRemote does not expose).
+    ///
+    /// All reads and writes happen on `@MainActor`, so there is no concurrent access.
+    private enum PrimarySource {
+        case awaitingProbe
+        case mediaRemote
+    }
+    private var primarySource: PrimarySource = .awaitingProbe
+    private var isMediaRemotePrimary: Bool { primarySource == .mediaRemote }
 
     // Known distributed notification names from media players
     private static let spotifyNotification = NSNotification.Name("com.spotify.client.PlaybackStateChanged")
@@ -170,8 +184,9 @@ final class NowPlayingMonitor: ObservableObject {
     }
 
     private func handleDistributedMediaInfo(_ info: DistributedMediaInfo) {
-        // If MediaRemote is working, only capture the track URI (which MediaRemote doesn't provide)
-        if mediaRemoteWorking {
+        // Once MediaRemote is the authoritative source, distributed notifications are
+        // used only to patch in the Spotify track URI — MediaRemote doesn't surface it.
+        if isMediaRemotePrimary {
             if let uri = info.trackURI, !uri.isEmpty {
                 sessionManager.patchCurrentTrackURI(uri)
             }
@@ -232,7 +247,7 @@ final class NowPlayingMonitor: ObservableObject {
                 guard let self else { return }
                 if hasData {
                     debugLog("[NowPlayingMonitor] MediaRemote is returning data — using as primary source")
-                    self.mediaRemoteWorking = true
+                    self.primarySource = .mediaRemote
                     self.processMediaRemoteParsed(parsed)
                 } else {
                     debugLog("[NowPlayingMonitor] MediaRemote returned empty — will activate on first callback")
@@ -293,10 +308,10 @@ final class NowPlayingMonitor: ObservableObject {
     }
 
     private func processMediaRemoteParsed(_ info: MRParsedInfo) {
-        // Mark MediaRemote as working once we get real data
-        if !mediaRemoteWorking && (info.title != nil || info.artist != nil) {
+        // Promote MediaRemote to primary the first time we see real metadata.
+        if !isMediaRemotePrimary && (info.title != nil || info.artist != nil) {
             debugLog("[NowPlayingMonitor] MediaRemote now returning data — suppressing distributed notifications")
-            mediaRemoteWorking = true
+            primarySource = .mediaRemote
         }
 
         let bundleId = mrAppBundleId ?? "unknown"
@@ -351,7 +366,7 @@ final class NowPlayingMonitor: ObservableObject {
             object: nil, queue: .main
         ) { [weak self] _ in
             Task { @MainActor in
-                if self?.mediaRemoteWorking == true {
+                if self?.isMediaRemotePrimary == true {
                     self?.handleMediaRemoteAppChange()
                 }
                 // Distributed notifications will fire naturally on wake

@@ -71,15 +71,23 @@ struct MenuBarView: View {
         .frame(width: 320)
         .background(VisualEffectBlur(material: .fullScreenUI, blendingMode: .behindWindow))
         .onAppear { loadTracks() }
-        .onChange(of: appState.isPlaying) { loadTracks() }
+        .onChange(of: appState.currentTrack?.id) { loadTracks() }
     }
 
     private func loadTracks() {
-        tracks = (try? appState.databaseManager?.recentTrackEntriesWithContext(limit: 50)) ?? []
+        guard let db = appState.databaseManager else { tracks = []; return }
+        Task.detached(priority: .userInitiated) {
+            let loaded = (try? db.recentTrackEntriesWithContext(limit: Constants.recentTrackLimit)) ?? []
+            await MainActor.run { self.tracks = loaded }
+        }
     }
 
     private func performClearAll() {
-        try? appState.databaseManager?.deleteAllSessions()
+        do {
+            try appState.databaseManager?.deleteAllSessions()
+        } catch {
+            debugLog("[MenuBarView] Failed to clear all sessions: \(error)")
+        }
         appState.sessionManager?.resetAfterClearAll()
         tracks = []
     }
@@ -159,26 +167,6 @@ struct MenuBarView: View {
     }
 
     private func playTrack(_ track: BezelTrackItem) {
-        guard let title = track.title else { return }
-        if track.appBundleId.lowercased().contains("spotify") {
-            playInSpotify(track)
-        } else {
-            debugLog("[MenuBarView] playInAppleMusic: \(title) — bundleId: \(track.appBundleId)")
-            playTrackInAppleMusic(title: title)
-        }
+        playBezelTrack(track)
     }
-
-    private func playInSpotify(_ track: BezelTrackItem) {
-        if let uri = track.sourceURI {
-            debugLog("[MenuBarView] playInSpotify via URI: \(uri)")
-            playTrackInSpotifyByURI(uri: uri)
-        } else if let title = track.title {
-            debugLog("[MenuBarView] playInSpotify via search: \(title)")
-            playTrackInSpotify(title: title, artist: track.artist)
-        }
-    }
-
-    // MARK: - Helpers
-
-
 }

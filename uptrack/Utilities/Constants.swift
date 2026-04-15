@@ -6,14 +6,20 @@ enum Constants {
     static let databaseFileName = "uptrack.db"
 
     static var databaseURL: URL {
-        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        return appSupport.appendingPathComponent(databaseDirectoryName).appendingPathComponent(databaseFileName)
+        databaseDirectoryURL.appendingPathComponent(databaseFileName)
     }
 
     static var databaseDirectoryURL: URL {
-        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let appSupport = FileManager.default
+            .urls(for: .applicationSupportDirectory, in: .userDomainMask)
+            .first
+            ?? URL(fileURLWithPath: NSHomeDirectory())
+                .appendingPathComponent("Library/Application Support")
         return appSupport.appendingPathComponent(databaseDirectoryName)
     }
+
+    /// Maximum number of recent track rows to load for the menu bar and bezel
+    static let recentTrackLimit = 50
 
     /// Sessions shorter than this are discarded on close
     static let minimumSessionDurationSeconds: TimeInterval = 3.0
@@ -64,6 +70,17 @@ private final class DebugLogger: @unchecked Sendable {
             }
         }
     }
+
+    func shutdown() {
+        queue.sync {
+            try? fileHandle?.close()
+            fileHandle = nil
+        }
+    }
+}
+
+func debugLogShutdown() {
+    DebugLogger.shared.shutdown()
 }
 
 func debugLog(_ message: String) {
@@ -133,6 +150,24 @@ func playTrackInSpotify(title: String, artist: String?) {
           let url = URL(string: "spotify:search:\(encoded)") else { return }
     debugLog("[Spotify] Opening search: \(url)")
     NSWorkspace.shared.open(url)
+}
+
+/// Play a bezel track item in the appropriate app, preferring URI-level playback when available.
+func playBezelTrack(_ item: BezelTrackItem) {
+    guard let title = item.title else { return }
+    let bundleId = item.appBundleId.lowercased()
+    if bundleId.contains("spotify") {
+        if let uri = item.sourceURI {
+            debugLog("[Playback] Spotify via URI: \(uri)")
+            playTrackInSpotifyByURI(uri: uri)
+        } else {
+            debugLog("[Playback] Spotify via search: \(title)")
+            playTrackInSpotify(title: title, artist: item.artist)
+        }
+    } else {
+        debugLog("[Playback] Apple Music search: \(title) — bundleId: \(item.appBundleId)")
+        playTrackInAppleMusic(title: title)
+    }
 }
 
 /// Play a specific track in Spotify by URI via AppleScript
