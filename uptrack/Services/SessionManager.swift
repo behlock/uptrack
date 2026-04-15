@@ -230,38 +230,40 @@ final class SessionManager: ObservableObject {
         }
         let artworkForResize = artworkTooLarge ? nil : artworkData
 
-        Task.detached(priority: .utility) { [weak self] in
-            let processedArtwork = artworkForResize.flatMap { Self.resizeArtwork($0) }
-
-            let entry = TrackEntry(
-                sessionId: sessionId,
-                title: title,
-                artist: artist,
-                album: album,
-                artworkData: processedArtwork,
-                startedAt: startedAt,
-                durationSeconds: duration,
-                sourceURI: sourceURI
-            )
-
-            let saved: TrackEntry?
-            do {
-                saved = try db.addTrackEntry(entry)
-            } catch {
-                debugLog("[SessionManager] Failed to add track entry: \(error)")
-                saved = nil
-            }
-
-            await MainActor.run {
-                guard let self else { return }
-                // If state was reset (e.g. "clear all" or session closed) while the
-                // resize/insert was in flight, drop the result.
-                guard self.pendingTrackStart else { return }
-                self.pendingTrackStart = false
-                if let saved {
-                    self.currentTrack = saved
-                    self.trackStartedAt = startedAt
+        // Stay on the main actor for the outer Task (inherits @MainActor from enclosing
+        // method); hop to a detached, utility-priority child Task only for the expensive
+        // artwork resize + synchronous DB insert. This avoids Swift 6 "task-isolated self
+        // in main-actor closure" diagnostics that strict concurrency reports when a
+        // detached task captures self directly.
+        Task { [weak self] in
+            let saved = await Task.detached(priority: .utility) { () -> TrackEntry? in
+                let processedArtwork = artworkForResize.flatMap { SessionManager.resizeArtwork($0) }
+                let entry = TrackEntry(
+                    sessionId: sessionId,
+                    title: title,
+                    artist: artist,
+                    album: album,
+                    artworkData: processedArtwork,
+                    startedAt: startedAt,
+                    durationSeconds: duration,
+                    sourceURI: sourceURI
+                )
+                do {
+                    return try db.addTrackEntry(entry)
+                } catch {
+                    debugLog("[SessionManager] Failed to add track entry: \(error)")
+                    return nil
                 }
+            }.value
+
+            guard let self else { return }
+            // If state was reset (e.g. "clear all" or session closed) while the
+            // resize/insert was in flight, drop the result.
+            guard self.pendingTrackStart else { return }
+            self.pendingTrackStart = false
+            if let saved {
+                self.currentTrack = saved
+                self.trackStartedAt = startedAt
             }
         }
     }
