@@ -4,7 +4,6 @@ struct MenuBarView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var updaterController: UpdaterController
     @State private var tracks: [BezelTrackItem] = []
-    @State private var showClearConfirmation = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -25,24 +24,26 @@ struct MenuBarView: View {
 
             TEDivider().padding(.vertical, 4)
 
+            if !tracks.isEmpty {
+                Button(action: { performClearAll() }) {
+                    Text("clear all")
+                        .font(uptrackTheme.Fonts.body(12))
+                        .foregroundStyle(uptrackTheme.Colors.textSecondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, uptrackTheme.Spacing.rowHorizontal)
+                        .padding(.vertical, 6)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(HighlightButtonStyle())
+                .pointerCursor()
+            }
+
             Button(action: {
-                AboutWindowController.show(
+                SettingsWindowController.show(
                     onCheckForUpdates: { updaterController.checkForUpdates() },
                     canCheckForUpdates: updaterController.canCheckForUpdates
                 )
             }) {
-                Text("about")
-                    .font(uptrackTheme.Fonts.body(12))
-                    .foregroundStyle(uptrackTheme.Colors.textSecondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, uptrackTheme.Spacing.rowHorizontal)
-                    .padding(.vertical, 6)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(HighlightButtonStyle())
-            .pointerCursor()
-
-            Button(action: { SettingsWindowController.show() }) {
                 Text("settings")
                     .font(uptrackTheme.Fonts.body(12))
                     .foregroundStyle(uptrackTheme.Colors.textSecondary)
@@ -53,20 +54,6 @@ struct MenuBarView: View {
             }
             .buttonStyle(HighlightButtonStyle())
             .pointerCursor()
-
-            Button(action: { showClearConfirmation = true }) {
-                Text("clear all")
-                    .font(uptrackTheme.Fonts.body(12))
-                    .foregroundStyle(uptrackTheme.Colors.textSecondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, uptrackTheme.Spacing.rowHorizontal)
-                    .padding(.vertical, 6)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(HighlightButtonStyle())
-            .pointerCursor()
-
-            TEDivider().padding(.vertical, 4)
 
             Button(action: { NSApplication.shared.terminate(nil) }) {
                 Text("quit")
@@ -85,12 +72,6 @@ struct MenuBarView: View {
         .background(VisualEffectBlur(material: .fullScreenUI, blendingMode: .behindWindow))
         .onAppear { loadTracks() }
         .onChange(of: appState.isPlaying) { loadTracks() }
-        .alert("clear all history?", isPresented: $showClearConfirmation) {
-            Button("clear all", role: .destructive) { performClearAll() }
-            Button("cancel", role: .cancel) {}
-        } message: {
-            Text("this will permanently delete all sessions and tracks.")
-        }
     }
 
     private func loadTracks() {

@@ -47,9 +47,11 @@ final class BezelController: ObservableObject {
         panel?.centerOnCurrentScreen()
         panel?.orderFrontRegardless()
         panel?.makeKey()
+        panel?.startKeyPolling()
     }
 
     func dismiss() {
+        panel?.stopKeyPolling()
         panel?.orderOut(nil)
         items = []
         currentIndex = 0

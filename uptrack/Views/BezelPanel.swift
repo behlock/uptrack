@@ -49,18 +49,31 @@ final class BezelPanel: NSPanel {
 
     override var canBecomeKey: Bool { true }
 
+    // Polling-based key-hold detection. We can't rely on keyDown alone:
+    // when the user's global hotkey includes Tab or an arrow, the Carbon
+    // hotkey handler consumes those keyDown events even while our panel
+    // is key, so holding the key never reaches -keyDown:. Polling
+    // CGEventSource.keyState lets us detect the physical hold state
+    // regardless of who consumed the event.
+    private var pollTimer: Timer?
+    private var heldKey: UInt16?
+    private var holdElapsed: TimeInterval = 0
+    private var nextFireAt: TimeInterval = 0
+    private let pollInterval: TimeInterval = 0.02
+    private let initialRepeatDelay: TimeInterval = 0.35
+    private let repeatInterval: TimeInterval = 0.08
+
+    // keyCode -> navigation direction. true = forward (onArrowUp), false = back.
+    private static let navKeys: [UInt16: Bool] = [
+        126: true,  // arrow up
+        124: true,  // arrow right
+        48: true,   // tab (treated as forward regardless of shift)
+        125: false, // arrow down
+        123: false, // arrow left
+    ]
+
     override func keyDown(with event: NSEvent) {
         switch event.keyCode {
-        case 126, 124: // arrow up, arrow right
-            onArrowUp?()
-        case 125, 123: // arrow down, arrow left
-            onArrowDown?()
-        case 48: // tab
-            if event.modifierFlags.contains(.shift) {
-                onArrowUp?()
-            } else {
-                onArrowDown?()
-            }
         case 36, 76: // return, numpad enter
             onPlay?()
         case 53: // escape
@@ -70,11 +83,61 @@ final class BezelPanel: NSPanel {
         }
     }
 
+    func startKeyPolling() {
+        stopKeyPolling()
+        pollTimer = Timer.scheduledTimer(withTimeInterval: pollInterval, repeats: true) { [weak self] _ in
+            self?.pollTick()
+        }
+    }
+
+    func stopKeyPolling() {
+        pollTimer?.invalidate()
+        pollTimer = nil
+        heldKey = nil
+        holdElapsed = 0
+        nextFireAt = 0
+    }
+
+    private func pollTick() {
+        let pressed = Self.navKeys.keys.first { keyCode in
+            CGEventSource.keyState(.combinedSessionState, key: keyCode)
+        }
+
+        guard let pressed else {
+            heldKey = nil
+            holdElapsed = 0
+            nextFireAt = 0
+            return
+        }
+
+        let forward = Self.navKeys[pressed] ?? true
+
+        if heldKey != pressed {
+            // newly pressed: fire once immediately, arm the initial delay
+            heldKey = pressed
+            holdElapsed = 0
+            nextFireAt = initialRepeatDelay
+            fire(forward: forward)
+            return
+        }
+
+        holdElapsed += pollInterval
+        if holdElapsed >= nextFireAt {
+            fire(forward: forward)
+            nextFireAt = holdElapsed + repeatInterval
+        }
+    }
+
+    private func fire(forward: Bool) {
+        if forward { onArrowUp?() } else { onArrowDown?() }
+    }
+
     override func flagsChanged(with event: NSEvent) {
         let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
             .subtracting([.capsLock, .function, .numericPad])
         // Dismiss when Option is released (the primary hotkey modifier)
         if !flags.contains(.option) {
+            stopKeyPolling()
             onDismiss?()
         }
     }
