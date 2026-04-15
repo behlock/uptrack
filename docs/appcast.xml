@@ -5,5 +5,30 @@
     <link>https://behlock.github.io/uptrack/appcast.xml</link>
     <description>Most recent changes with links to updates.</description>
     <language>en</language>
+    <item>
+      <title>Version 1.0.6</title>
+      <pubDate>Wed, 15 Apr 2026 12:00:00 +0000</pubDate>
+      <sparkle:version>6</sparkle:version>
+      <sparkle:shortVersionString>1.0.6</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[
+        <h3>Fixes &amp; improvements</h3>
+        <ul>
+          <li>Shut down media, audio, and hotkey observers cleanly on quit.</li>
+          <li>Artwork resize and track-entry insert now run off the main thread.</li>
+          <li>Bezel reloads recent tracks on every re-open (was showing stale data).</li>
+          <li>Menu bar recent-track query moved off main; refresh debounced on track change.</li>
+          <li>Typed state machine replaces the MediaRemote-vs-distributed-notifications flag.</li>
+          <li>Safe fallback for malformed hex colors instead of release-stripped asserts.</li>
+          <li>Removed force-unwraps on the Application Support URL.</li>
+          <li>Bezel key polling 50&nbsp;Hz &rarr; 30&nbsp;Hz.</li>
+        </ul>
+      ]]></description>
+      <enclosure
+        url="https://github.com/behlock/uptrack/releases/download/v1.0.6/uptrack-1.0.6.zip"
+        sparkle:edSignature="aLeHyYremYsdD11eYtFRXjOGSm5EcL5lamwR99RdNHUiRwK2oDL2AGy0zxwZ+1/FEHMTb8+Pjq1IhDxSNMhrDQ=="
+        length="2625051"
+        type="application/octet-stream" />
+    </item>
   </channel>
 </rss>
