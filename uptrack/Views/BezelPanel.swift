@@ -66,6 +66,12 @@ final class BezelPanel: NSPanel {
     private var heldKey: UInt16?
     private var holdElapsed: TimeInterval = 0
     private var nextFireAt: TimeInterval = 0
+    // Set to true by BezelController after the global hotkey fires (Carbon has already
+    // performed the navigation). The poll then suppresses its own "newly pressed"
+    // immediate fire for the next keypress so we don't double-navigate. Repeat fires
+    // (after initialRepeatDelay) are unaffected — holding still cycles at the normal
+    // rate.
+    private var suppressNextImmediateFire = false
     // 30 Hz polling: still well under a human key-hold latency threshold (~50 ms) but
     // 33% fewer ticks/CGEventSource.keyState calls than the previous 50 Hz loop.
     private let pollInterval: TimeInterval = 0.033
@@ -101,12 +107,20 @@ final class BezelPanel: NSPanel {
         }
     }
 
+    /// Called by `BezelController` when the global hotkey (or `show()`) has just
+    /// performed a navigation. The next "newly pressed" detection in `pollTick`
+    /// is treated as a continuation of that same keystroke and does not fire again.
+    func suppressNextHotkeyFire() {
+        suppressNextImmediateFire = true
+    }
+
     func stopKeyPolling() {
         pollTimer?.invalidate()
         pollTimer = nil
         heldKey = nil
         holdElapsed = 0
         nextFireAt = 0
+        suppressNextImmediateFire = false
     }
 
     private func pollTick() {
@@ -124,11 +138,18 @@ final class BezelPanel: NSPanel {
         let forward = Self.navKeys[pressed] ?? true
 
         if heldKey != pressed {
-            // newly pressed: fire once immediately, arm the initial delay
+            // newly pressed: fire once immediately, arm the initial delay.
+            // Exception: when the global hotkey just fired (Carbon already navigated),
+            // we swallow this one keystroke so a single Option+Tab press advances by 1,
+            // not 2.
             heldKey = pressed
             holdElapsed = 0
             nextFireAt = initialRepeatDelay
-            fire(forward: forward)
+            if suppressNextImmediateFire {
+                suppressNextImmediateFire = false
+            } else {
+                fire(forward: forward)
+            }
             return
         }
 

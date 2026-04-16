@@ -37,8 +37,12 @@ final class BezelController: ObservableObject {
         }
 
         if wasVisible {
-            // Already visible: treat repeat hotkey as "next track"
+            // Already visible: treat repeat hotkey as "next track".
+            // Tell the panel to swallow the poll's "newly pressed" immediate fire for
+            // this same keystroke — Carbon just navigated, the poll must not navigate
+            // again or every Option+Tab would advance by 2.
             navigateUp()
+            panel?.suppressNextHotkeyFire()
             return
         }
 
@@ -52,6 +56,10 @@ final class BezelController: ObservableObject {
         panel?.orderFrontRegardless()
         panel?.makeKey()
         panel?.startKeyPolling()
+        // First open: the hotkey key is still physically held. Without this the poll's
+        // first "newly pressed" tick would fire and jump from index 0 to 1, making it
+        // look like the first track is skipped.
+        panel?.suppressNextHotkeyFire()
     }
 
     func dismiss() {
