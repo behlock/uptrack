@@ -69,6 +69,7 @@ fastlane/test_output
 
 # Build artifacts
 build/
+build-local/
 DerivedData/
 *.xcarchive
 PBTrack-*.zip
