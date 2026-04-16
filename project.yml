@@ -33,14 +33,15 @@ targets:
         NSAppleEventsUsageDescription: "uptrack needs access to control Music to play tracks from your history."
         CFBundleDisplayName: uptrack
         CFBundleName: uptrack
-        CFBundleShortVersionString: "1.0.8"
-        CFBundleVersion: "8"
+        CFBundleShortVersionString: "1.0.9"
+        CFBundleVersion: "9"
         SUFeedURL: "https://behlock.github.io/uptrack/appcast.xml"
         SUPublicEDKey: "jNPt4Eid/3sp6mOMww36JmNt6v3vgyyJ28N6Q/zgvo4="
     entitlements:
       path: uptrack/uptrack.entitlements
       properties:
         com.apple.security.app-sandbox: false
+        com.apple.security.automation.apple-events: true
         com.apple.security.cs.disable-library-validation: true
     settings:
       base:
@@ -49,8 +50,8 @@ targets:
         DEVELOPMENT_TEAM: MRU883JADA
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ENABLE_HARDENED_RUNTIME: YES
-        MARKETING_VERSION: "1.0.8"
-        CURRENT_PROJECT_VERSION: "8"
+        MARKETING_VERSION: "1.0.9"
+        CURRENT_PROJECT_VERSION: "9"
       configs:
         Debug:
           CODE_SIGN_IDENTITY: "Apple Development"
