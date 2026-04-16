@@ -6,6 +6,26 @@
     <description>Most recent changes with links to updates.</description>
     <language>en</language>
     <item>
+      <title>Version 1.0.8</title>
+      <pubDate>Thu, 16 Apr 2026 16:00:00 +0000</pubDate>
+      <sparkle:version>8</sparkle:version>
+      <sparkle:shortVersionString>1.0.8</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[
+        <h3>Changes</h3>
+        <ul>
+          <li>Menu bar dropdown is now a native macOS menu with keyboard shortcuts (⌘, settings, ⌘Q quit).</li>
+          <li>Bezel stays dark regardless of system appearance (fixes washed-out look in Light mode).</li>
+          <li>Bezel reliably dismisses when the hotkey modifier is released — no more getting stuck while keys are held.</li>
+        </ul>
+      ]]></description>
+      <enclosure
+        url="https://github.com/behlock/uptrack/releases/download/v1.0.8/uptrack-1.0.8.zip"
+        sparkle:edSignature="DfIHrUHXEtdyQ+Tm/Gdaovse9QvUBNovZR1afcuTueDJN011wECl+9+JZvD3NGsblETwbBZGZQIOKeUBhVM+Ag=="
+        length="2610247"
+        type="application/octet-stream" />
+    </item>
+    <item>
       <title>Version 1.0.7</title>
       <pubDate>Thu, 16 Apr 2026 14:00:00 +0000</pubDate>
       <sparkle:version>7</sparkle:version>
