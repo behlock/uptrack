@@ -6,6 +6,24 @@
     <description>Most recent changes with links to updates.</description>
     <language>en</language>
     <item>
+      <title>Version 1.0.7</title>
+      <pubDate>Thu, 16 Apr 2026 14:00:00 +0000</pubDate>
+      <sparkle:version>7</sparkle:version>
+      <sparkle:shortVersionString>1.0.7</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[
+        <h3>Fixes</h3>
+        <ul>
+          <li>Bezel no longer skips every other track when holding or tapping the hotkey.</li>
+        </ul>
+      ]]></description>
+      <enclosure
+        url="https://github.com/behlock/uptrack/releases/download/v1.0.7/uptrack-1.0.7.zip"
+        sparkle:edSignature="Rvs/62JnO/Aombj5q8V1R9Qbjr4A+FtPJGgAGa9D/9i9soNvPLai7wY5JHU2zzuEK4mztIMeHor135QmSxtMDg=="
+        length="2625248"
+        type="application/octet-stream" />
+    </item>
+    <item>
       <title>Version 1.0.6</title>
       <pubDate>Wed, 15 Apr 2026 12:00:00 +0000</pubDate>
       <sparkle:version>6</sparkle:version>
