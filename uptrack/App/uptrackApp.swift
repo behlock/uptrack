@@ -16,7 +16,7 @@ struct uptrackApp: App {
             Image("MenuBarIcon")
                 .renderingMode(.template)
         }
-        .menuBarExtraStyle(.window)
+        .menuBarExtraStyle(.menu)
     }
 }
 

@@ -1,4 +1,5 @@
 import AppKit
+import KeyboardShortcuts
 import SwiftUI
 
 @MainActor
@@ -51,6 +52,11 @@ final class BezelController: ObservableObject {
         if panel == nil {
             createPanel()
         }
+
+        // Keep auto-dismiss in sync with the user's current hotkey. If the shortcut
+        // has no modifiers the bezel won't auto-close on key release — user must
+        // explicitly dismiss with Escape or Enter.
+        panel?.requiredModifiers = KeyboardShortcuts.getShortcut(for: .showBezel)?.modifiers ?? []
 
         panel?.centerOnCurrentScreen()
         panel?.orderFrontRegardless()

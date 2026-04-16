@@ -22,6 +22,11 @@ final class BezelPanel: NSPanel {
         isMovableByWindowBackground = false
         hidesOnDeactivate = false
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        // Always present the bezel as a dark HUD, regardless of the user's system
+        // appearance. Without this `.hudWindow` becomes a washed-out light rectangle
+        // in Light mode, and the SwiftUI theme colors (`Color(light:dark:)`) resolve
+        // to the light-mode palette (dark text on dark app) which looks broken.
+        appearance = NSAppearance(named: .darkAqua)
 
         // Visual effect backdrop
         let cornerRadius = uptrackTheme.Dimensions.bezelCornerRadius
@@ -29,6 +34,7 @@ final class BezelPanel: NSPanel {
         visualEffect.material = .hudWindow
         visualEffect.state = .active
         visualEffect.blendingMode = .behindWindow
+        visualEffect.appearance = NSAppearance(named: .darkAqua)
         visualEffect.maskImage = Self.roundedMaskImage(cornerRadius: cornerRadius)
 
         contentView.translatesAutoresizingMaskIntoConstraints = false
@@ -72,6 +78,17 @@ final class BezelPanel: NSPanel {
     // (after initialRepeatDelay) are unaffected — holding still cycles at the normal
     // rate.
     private var suppressNextImmediateFire = false
+
+    /// Modifiers that must remain pressed to keep the bezel visible. When all of these
+    /// are no longer held, the poll dismisses the panel. Set by `BezelController` from
+    /// the current global hotkey's modifiers (typically `.option`). Empty means the
+    /// bezel won't auto-dismiss on modifier release — user must press Escape / Enter.
+    ///
+    /// This is the backstop for `flagsChanged`: a `.nonactivatingPanel` doesn't
+    /// reliably receive AppKit modifier-change events (the frontmost app remains key),
+    /// so modifier release from flagsChanged alone can miss. Polling `NSEvent.modifierFlags`
+    /// catches it regardless of who owns key status.
+    var requiredModifiers: NSEvent.ModifierFlags = [.option]
     // 30 Hz polling: still well under a human key-hold latency threshold (~50 ms) but
     // 33% fewer ticks/CGEventSource.keyState calls than the previous 50 Hz loop.
     private let pollInterval: TimeInterval = 0.033
@@ -124,6 +141,19 @@ final class BezelPanel: NSPanel {
     }
 
     private func pollTick() {
+        // Modifier-release dismissal (see `requiredModifiers` doc). AppKit's
+        // flagsChanged doesn't fire reliably while a non-activating panel is on
+        // screen — the frontmost app stays key. Polling NSEvent.modifierFlags
+        // catches release regardless.
+        if !requiredModifiers.isEmpty {
+            let current = NSEvent.modifierFlags.intersection(.deviceIndependentFlagsMask)
+            if !current.isSuperset(of: requiredModifiers) {
+                stopKeyPolling()
+                onDismiss?()
+                return
+            }
+        }
+
         let pressed = Self.navKeys.keys.first { keyCode in
             CGEventSource.keyState(.combinedSessionState, key: keyCode)
         }

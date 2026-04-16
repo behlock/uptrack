@@ -1,77 +1,73 @@
 import SwiftUI
 
+/// Native-style menu contents. Only view types that `MenuBarExtra(..., style: .menu)`
+/// understands: `Button`, `Text`, `Divider`, `Menu` (for submenus), and `ForEach` of
+/// those. Everything else (ScrollView, HStack, custom button styles, backgrounds,
+/// frames) is silently dropped by the .menu renderer.
 struct MenuBarView: View {
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var updaterController: UpdaterController
     @State private var tracks: [BezelTrackItem] = []
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        Group {
             if !appState.mediaRemoteAvailable {
-                warningBanner(
-                    "mediaremote framework unavailable. playback tracking is disabled."
-                )
+                Text("⚠︎ mediaremote unavailable — tracking disabled")
             }
-
             if !appState.databaseAvailable {
-                warningBanner(
-                    "database failed to initialize. session history will not be saved."
-                )
+                Text("⚠︎ database unavailable — history not saved")
             }
 
-            // Scrollable session history
-            sessionsSection
+            if tracks.isEmpty {
+                Text("no tracks yet")
+            } else {
+                ForEach(tracks) { track in
+                    trackButton(track)
+                }
+            }
 
-            TEDivider().padding(.vertical, 4)
+            Divider()
 
             if !tracks.isEmpty {
-                Button(action: { performClearAll() }) {
-                    Text("clear all")
-                        .font(uptrackTheme.Fonts.body(12))
-                        .foregroundStyle(uptrackTheme.Colors.textSecondary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, uptrackTheme.Spacing.rowHorizontal)
-                        .padding(.vertical, 6)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(HighlightButtonStyle())
-                .pointerCursor()
+                Button("clear all") { performClearAll() }
             }
-
-            Button(action: {
-                SettingsWindowController.show(
-                    onCheckForUpdates: { updaterController.checkForUpdates() },
-                    canCheckForUpdates: updaterController.canCheckForUpdates
-                )
-            }) {
-                Text("settings")
-                    .font(uptrackTheme.Fonts.body(12))
-                    .foregroundStyle(uptrackTheme.Colors.textSecondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, uptrackTheme.Spacing.rowHorizontal)
-                    .padding(.vertical, 6)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(HighlightButtonStyle())
-            .pointerCursor()
-
-            Button(action: { NSApplication.shared.terminate(nil) }) {
-                Text("quit")
-                    .font(uptrackTheme.Fonts.body(12))
-                    .foregroundStyle(uptrackTheme.Colors.textSecondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, uptrackTheme.Spacing.rowHorizontal)
-                    .padding(.vertical, 6)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(HighlightButtonStyle())
-            .pointerCursor()
+            Button("settings…") { showSettings() }
+                .keyboardShortcut(",")
+            Button("quit uptrack") { NSApplication.shared.terminate(nil) }
+                .keyboardShortcut("q")
         }
-        .padding(.vertical, uptrackTheme.Spacing.unit)
-        .frame(width: 320)
-        .background(VisualEffectBlur(material: .fullScreenUI, blendingMode: .behindWindow))
         .onAppear { loadTracks() }
         .onChange(of: appState.currentTrack?.id) { loadTracks() }
+    }
+
+    @ViewBuilder
+    private func trackButton(_ track: BezelTrackItem) -> some View {
+        let canPlay = isPlayable(track) && track.title != nil
+        Button(menuLabel(for: track)) { playBezelTrack(track) }
+            .disabled(!canPlay)
+    }
+
+    private func menuLabel(for track: BezelTrackItem) -> String {
+        let title = track.title?.lowercased() ?? "unknown track"
+        let suffix = sourceSuffix(for: track.appBundleId)
+        if let artist = track.artist?.lowercased(), !artist.isEmpty {
+            return "\(title) — \(artist)\(suffix)"
+        }
+        return "\(title)\(suffix)"
+    }
+
+    private func sourceSuffix(for bundleId: String) -> String {
+        let lower = bundleId.lowercased()
+        if lower.contains("spotify") { return "  · spotify" }
+        if lower.contains("com.apple.music") || lower.contains("com.apple.itunes") {
+            return "  · music"
+        }
+        return ""
+    }
+
+    private func isPlayable(_ track: BezelTrackItem) -> Bool {
+        let lower = track.appBundleId.lowercased()
+        return lower.contains("spotify") || lower.contains("com.apple.music")
     }
 
     private func loadTracks() {
@@ -92,81 +88,10 @@ struct MenuBarView: View {
         tracks = []
     }
 
-    // MARK: - Sections
-
-    @ViewBuilder
-    private func warningBanner(_ message: String) -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundStyle(uptrackTheme.Colors.warning)
-            Text(message)
-                .font(uptrackTheme.Fonts.mono(11))
-                .foregroundStyle(uptrackTheme.Colors.textSecondary)
-        }
-        .padding(.horizontal, uptrackTheme.Spacing.rowHorizontal)
-        .padding(.vertical, uptrackTheme.Spacing.unit)
-
-        TEDivider().padding(.vertical, 4)
-    }
-
-    @ViewBuilder
-    private var sessionsSection: some View {
-        if tracks.isEmpty {
-            Text("no tracks yet")
-                .font(uptrackTheme.Fonts.mono(11))
-                .foregroundStyle(uptrackTheme.Colors.textTertiary)
-                .padding(.horizontal, uptrackTheme.Spacing.rowHorizontal)
-                .padding(.vertical, 4)
-        } else {
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 0) {
-                    ForEach(tracks) { track in
-                        trackRow(track)
-                    }
-                }
-            }
-            .frame(maxHeight: 300)
-        }
-    }
-
-    @ViewBuilder
-    private func trackRow(_ track: BezelTrackItem) -> some View {
-        let isAppleMusic = track.appBundleId.contains("com.apple.Music")
-        let isSpotify = track.appBundleId.lowercased().contains("spotify")
-        let canPlay = (isAppleMusic || isSpotify) && track.title != nil
-        Button(action: { if canPlay { playTrack(track) } }) {
-            HStack(spacing: 6) {
-                VStack(alignment: .leading, spacing: 1) {
-                    HStack(spacing: 4) {
-                        Text(track.title?.lowercased() ?? "unknown track")
-                            .font(uptrackTheme.Fonts.body(12))
-                            .foregroundStyle(uptrackTheme.Colors.textPrimary)
-                            .lineLimit(1)
-                        if let artist = track.artist {
-                            Text("—")
-                                .font(uptrackTheme.Fonts.body(11))
-                                .foregroundStyle(uptrackTheme.Colors.textTertiary)
-                            Text(artist.lowercased())
-                                .font(uptrackTheme.Fonts.body(11))
-                                .foregroundStyle(uptrackTheme.Colors.textSecondary)
-                                .lineLimit(1)
-                        }
-                    }
-                }
-
-                Spacer()
-
-                AppNameLabel(appName: track.appName, appBundleId: track.appBundleId, fontSize: 9)
-            }
-            .padding(.horizontal, uptrackTheme.Spacing.rowHorizontal)
-            .padding(.vertical, 5)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(HighlightButtonStyle())
-        .pointerCursor()
-    }
-
-    private func playTrack(_ track: BezelTrackItem) {
-        playBezelTrack(track)
+    private func showSettings() {
+        SettingsWindowController.show(
+            onCheckForUpdates: { updaterController.checkForUpdates() },
+            canCheckForUpdates: updaterController.canCheckForUpdates
+        )
     }
 }
