@@ -6,6 +6,35 @@
     <description>Most recent changes with links to updates.</description>
     <language>en</language>
     <item>
+      <title>Version 1.1.0</title>
+      <pubDate>Fri, 17 Apr 2026 14:00:00 +0000</pubDate>
+      <sparkle:version>10</sparkle:version>
+      <sparkle:shortVersionString>1.1.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[
+        <h3>Breaking</h3>
+        <ul>
+          <li>macOS 26 is now required.</li>
+        </ul>
+        <h3>UI</h3>
+        <ul>
+          <li>Bezel HUD adopts SwiftUI Liquid Glass (replaces the <code>NSVisualEffectView</code>/<code>hudWindow</code> backdrop).</li>
+          <li>Bezel follows the system Light/Dark setting.</li>
+          <li>Settings "check for updates" button uses the new glass button style.</li>
+          <li>Menu-bar items show the Spotify logo (as a custom SF Symbol) and the Apple glyph inline before the source name.</li>
+        </ul>
+        <h3>Artwork</h3>
+        <ul>
+          <li>On macOS 26, MediaRemote no longer exposes artwork to third parties. Artwork is now fetched via AppleScript (Spotify: artwork URL + HTTP; Music: raw artwork data) and patched into the current track row.</li>
+        </ul>
+      ]]></description>
+      <enclosure
+        url="https://github.com/behlock/uptrack/releases/download/v1.1.0/uptrack-1.1.0.zip"
+        sparkle:edSignature="WUYGiCC335CIe2qN4iiIbgOVQH9RyFSlKuXNrjRf/+AF6VX70MF4lSt+9d4CwPmfILlHlCSk8aUuph4/t+X3DQ=="
+        length="3833476"
+        type="application/octet-stream" />
+    </item>
+    <item>
       <title>Version 1.0.8</title>
       <pubDate>Thu, 16 Apr 2026 16:00:00 +0000</pubDate>
       <sparkle:version>8</sparkle:version>

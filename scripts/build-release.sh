@@ -41,7 +41,9 @@ xcodebuild -exportArchive \
 
 echo "==> Verifying code signing"
 codesign -dv --verbose=4 "$BUILD_DIR/export/uptrack.app"
-spctl -a -v "$BUILD_DIR/export/uptrack.app"
+# Pre-notarization spctl assessment is expected to fail (`source=Unnotarized
+# Developer ID`); don't let it abort the script under `set -e`.
+spctl -a -v "$BUILD_DIR/export/uptrack.app" || true
 
 if $NOTARIZE; then
   echo "==> Creating zip for notarization"
