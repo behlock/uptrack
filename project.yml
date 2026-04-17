@@ -2,7 +2,7 @@ name: uptrack
 options:
   bundleIdPrefix: com.uptrack
   deploymentTarget:
-    macOS: "14.0"
+    macOS: "26.0"
   generateEmptyDirectories: true
 
 packages:
@@ -33,8 +33,8 @@ targets:
         NSAppleEventsUsageDescription: "uptrack needs access to control Music to play tracks from your history."
         CFBundleDisplayName: uptrack
         CFBundleName: uptrack
-        CFBundleShortVersionString: "1.0.9"
-        CFBundleVersion: "9"
+        CFBundleShortVersionString: "1.1.0"
+        CFBundleVersion: "10"
         SUFeedURL: "https://behlock.github.io/uptrack/appcast.xml"
         SUPublicEDKey: "jNPt4Eid/3sp6mOMww36JmNt6v3vgyyJ28N6Q/zgvo4="
     entitlements:
@@ -46,12 +46,12 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.uptrack.app
-        MACOSX_DEPLOYMENT_TARGET: "14.0"
+        MACOSX_DEPLOYMENT_TARGET: "26.0"
         DEVELOPMENT_TEAM: MRU883JADA
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ENABLE_HARDENED_RUNTIME: YES
-        MARKETING_VERSION: "1.0.9"
-        CURRENT_PROJECT_VERSION: "9"
+        MARKETING_VERSION: "1.1.0"
+        CURRENT_PROJECT_VERSION: "10"
       configs:
         Debug:
           CODE_SIGN_IDENTITY: "Apple Development"

@@ -18,35 +18,14 @@ final class BezelPanel: NSPanel {
         level = .floating
         isOpaque = false
         backgroundColor = .clear
-        hasShadow = true
+        hasShadow = false
         isMovableByWindowBackground = false
         hidesOnDeactivate = false
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-        // Always present the bezel as a dark HUD, regardless of the user's system
-        // appearance. Without this `.hudWindow` becomes a washed-out light rectangle
-        // in Light mode, and the SwiftUI theme colors (`Color(light:dark:)`) resolve
-        // to the light-mode palette (dark text on dark app) which looks broken.
-        appearance = NSAppearance(named: .darkAqua)
 
-        // Visual effect backdrop
-        let cornerRadius = uptrackTheme.Dimensions.bezelCornerRadius
-        let visualEffect = NSVisualEffectView()
-        visualEffect.material = .hudWindow
-        visualEffect.state = .active
-        visualEffect.blendingMode = .behindWindow
-        visualEffect.appearance = NSAppearance(named: .darkAqua)
-        visualEffect.maskImage = Self.roundedMaskImage(cornerRadius: cornerRadius)
-
-        contentView.translatesAutoresizingMaskIntoConstraints = false
-        visualEffect.addSubview(contentView)
-        NSLayoutConstraint.activate([
-            contentView.topAnchor.constraint(equalTo: visualEffect.topAnchor),
-            contentView.bottomAnchor.constraint(equalTo: visualEffect.bottomAnchor),
-            contentView.leadingAnchor.constraint(equalTo: visualEffect.leadingAnchor),
-            contentView.trailingAnchor.constraint(equalTo: visualEffect.trailingAnchor),
-        ])
-
-        self.contentView = visualEffect
+        // The SwiftUI content (BezelContentView) applies `.glassEffect` for the
+        // Liquid Glass surface and rounded clip — no AppKit blur layer needed.
+        self.contentView = contentView
         setContentSize(NSSize(
             width: uptrackTheme.Dimensions.bezelWidth,
             height: uptrackTheme.Dimensions.bezelHeight
@@ -202,23 +181,6 @@ final class BezelPanel: NSPanel {
             stopKeyPolling()
             onDismiss?()
         }
-    }
-
-    private static func roundedMaskImage(cornerRadius: CGFloat) -> NSImage {
-        let edgeLength = 2.0 * cornerRadius + 1.0
-        let size = NSSize(width: edgeLength, height: edgeLength)
-        let image = NSImage(size: size, flipped: false) { rect in
-            let path = NSBezierPath(roundedRect: rect, xRadius: cornerRadius, yRadius: cornerRadius)
-            NSColor.black.set()
-            path.fill()
-            return true
-        }
-        image.capInsets = NSEdgeInsets(
-            top: cornerRadius, left: cornerRadius,
-            bottom: cornerRadius, right: cornerRadius
-        )
-        image.resizingMode = .stretch
-        return image
     }
 
     func centerOnCurrentScreen() {

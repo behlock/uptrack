@@ -118,6 +118,11 @@ final class NowPlayingMonitor: ObservableObject {
     private var primarySource: PrimarySource = .awaitingProbe
     private var isMediaRemotePrimary: Bool { primarySource == .mediaRemote }
 
+    /// Last (title, artist) we kicked off an artwork fetch for on the distributed
+    /// path. Distributed notifications fire on every play/pause/scrub, so we dedupe
+    /// here to avoid hammering the source app's AppleScript bridge.
+    private var lastArtworkFetchKey: String?
+
     // Known distributed notification names from media players
     private static let spotifyNotification = NSNotification.Name("com.spotify.client.PlaybackStateChanged")
     private static let musicNotification = NSNotification.Name("com.apple.Music.playerInfo")
@@ -223,6 +228,30 @@ final class NowPlayingMonitor: ObservableObject {
             trackURI: info.trackURI,
             device: audioDeviceMonitor.currentDevice
         )
+
+        fetchArtworkForDistributedTrack(info)
+    }
+
+    /// On macOS 26+ MediaRemote no longer exposes artwork to third parties, so the
+    /// distributed-notification path passes `nil` above. Compensate by asking the
+    /// source app directly via AppleScript and patching the artwork in once the
+    /// track row exists. Only runs when the (title, artist) pair changes so we
+    /// don't re-fetch on play/pause/scrub.
+    private func fetchArtworkForDistributedTrack(_ info: DistributedMediaInfo) {
+        guard info.isPlaying, info.title != nil || info.artist != nil else { return }
+        let key = "\(info.title ?? "")|\(info.artist ?? "")"
+        guard key != lastArtworkFetchKey else { return }
+        lastArtworkFetchKey = key
+
+        let title = info.title
+        let artist = info.artist
+        let bundleId = info.bundleId
+        ArtworkFetcher.fetch(bundleId: bundleId) { [weak self] data in
+            guard let data else { return }
+            Task { @MainActor in
+                self?.sessionManager.patchCurrentTrackArtwork(data, title: title, artist: artist)
+            }
+        }
     }
 
     // MARK: - MediaRemote (works on macOS <26)

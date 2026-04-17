@@ -132,43 +132,6 @@ struct AppNameLabel: View {
     }
 }
 
-// MARK: - Visual Effect
-
-struct VisualEffectBlur: NSViewRepresentable {
-    var material: NSVisualEffectView.Material
-    var blendingMode: NSVisualEffectView.BlendingMode
-
-    func makeNSView(context: Context) -> NSVisualEffectView {
-        let view = NSVisualEffectView()
-        view.material = material
-        view.blendingMode = blendingMode
-        view.state = .active
-        return view
-    }
-
-    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
-        nsView.material = material
-        nsView.blendingMode = blendingMode
-    }
-}
-
-// MARK: - Button Styles
-
-struct HighlightButtonStyle: ButtonStyle {
-    @State private var isHovered = false
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .background(
-                RoundedRectangle(cornerRadius: 4)
-                    .fill(isHovered || configuration.isPressed
-                          ? uptrackTheme.Colors.textPrimary.opacity(0.1)
-                          : Color.clear)
-            )
-            .onHover { isHovered = $0 }
-    }
-}
-
 // MARK: - View Modifiers
 
 extension View {

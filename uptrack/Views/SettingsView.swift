@@ -50,20 +50,9 @@ struct SettingsView: View {
 
                 Spacer()
 
-                Button(action: onCheckForUpdates) {
-                    Text("check for updates")
-                        .font(uptrackTheme.Fonts.body(12))
-                        .foregroundStyle(uptrackTheme.Colors.textSecondary)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 4)
-                        .background(
-                            RoundedRectangle(cornerRadius: 6)
-                                .stroke(uptrackTheme.Colors.border, lineWidth: 1)
-                        )
-                }
-                .buttonStyle(.plain)
-                .pointerCursor()
-                .disabled(!canCheckForUpdates)
+                Button("check for updates", action: onCheckForUpdates)
+                    .buttonStyle(.glass)
+                    .disabled(!canCheckForUpdates)
             }
 
         }

@@ -109,6 +109,43 @@ final class SessionManager: ObservableObject {
         }
     }
 
+    /// Patch in artwork fetched out-of-band (e.g. via AppleScript on macOS 26+ where
+    /// MediaRemote no longer surfaces image data). Title/artist are passed by the caller
+    /// so we can drop the patch if the user has skipped tracks while the fetch was
+    /// in flight. If the new track is still being inserted (`pendingTrackStart`), we
+    /// retry once after a short delay.
+    func patchCurrentTrackArtwork(_ data: Data, title: String?, artist: String?) {
+        if currentTrack == nil && pendingTrackStart
+            && lastTrackTitle == title && lastTrackArtist == artist {
+            Task { @MainActor [weak self] in
+                try? await Task.sleep(nanoseconds: 250_000_000)
+                self?.patchCurrentTrackArtwork(data, title: title, artist: artist)
+            }
+            return
+        }
+
+        guard let track = currentTrack,
+              let trackId = track.id,
+              track.title == title,
+              track.artist == artist,
+              track.artworkData == nil else { return }
+
+        let db = database
+        Task.detached(priority: .utility) { [weak self] in
+            guard let resized = SessionManager.resizeArtwork(data) else { return }
+            do {
+                try db.updateTrackEntryArtwork(id: trackId, artworkData: resized)
+            } catch {
+                debugLog("[SessionManager] Failed to update track artwork: \(error)")
+                return
+            }
+            await MainActor.run {
+                guard let self, self.currentTrack?.id == trackId else { return }
+                self.currentTrack?.artworkData = resized
+            }
+        }
+    }
+
     /// Reset state after all sessions have been deleted (e.g. "clear all").
     func resetAfterClearAll() {
         resetState()

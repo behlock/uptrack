@@ -17,6 +17,11 @@ struct BezelContentView: View {
             width: uptrackTheme.Dimensions.bezelWidth,
             height: uptrackTheme.Dimensions.bezelHeight
         )
+        .glassEffect(
+            .regular,
+            in: .rect(cornerRadius: uptrackTheme.Dimensions.bezelCornerRadius)
+        )
+        .clipShape(.rect(cornerRadius: uptrackTheme.Dimensions.bezelCornerRadius))
         .animation(.easeInOut(duration: 0.15), value: controller.currentIndex)
     }
 

@@ -43,26 +43,26 @@ struct MenuBarView: View {
     @ViewBuilder
     private func trackButton(_ track: BezelTrackItem) -> some View {
         let canPlay = isPlayable(track) && track.title != nil
-        Button(menuLabel(for: track)) { playBezelTrack(track) }
-            .disabled(!canPlay)
+        let title = trackTitleText(track)
+        let lower = track.appBundleId.lowercased()
+        Button(action: { playBezelTrack(track) }) {
+            if lower.contains("spotify") {
+                Text("\(title)  ·  \(Image("SpotifyIcon")) spotify")
+            } else if lower.contains("com.apple.music") || lower.contains("com.apple.itunes") {
+                Text("\(title)  ·  \u{f8ff} music")
+            } else {
+                Text(title)
+            }
+        }
+        .disabled(!canPlay)
     }
 
-    private func menuLabel(for track: BezelTrackItem) -> String {
+    private func trackTitleText(_ track: BezelTrackItem) -> String {
         let title = track.title?.lowercased() ?? "unknown track"
-        let suffix = sourceSuffix(for: track.appBundleId)
         if let artist = track.artist?.lowercased(), !artist.isEmpty {
-            return "\(title) — \(artist)\(suffix)"
+            return "\(title) — \(artist)"
         }
-        return "\(title)\(suffix)"
-    }
-
-    private func sourceSuffix(for bundleId: String) -> String {
-        let lower = bundleId.lowercased()
-        if lower.contains("spotify") { return "  · spotify" }
-        if lower.contains("com.apple.music") || lower.contains("com.apple.itunes") {
-            return "  · music"
-        }
-        return ""
+        return title
     }
 
     private func isPlayable(_ track: BezelTrackItem) -> Bool {

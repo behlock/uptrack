@@ -142,6 +142,15 @@ final class DatabaseManager: Sendable {
         }
     }
 
+    func updateTrackEntryArtwork(id: Int64, artworkData: Data) throws {
+        try dbQueue.write { db in
+            try db.execute(
+                sql: "UPDATE track_entries SET artwork_data = ? WHERE id = ?",
+                arguments: [artworkData, id]
+            )
+        }
+    }
+
     // MARK: - Aggregates
 
     struct AppInfo: Sendable {
