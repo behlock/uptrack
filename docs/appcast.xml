@@ -6,6 +6,24 @@
     <description>Most recent changes with links to updates.</description>
     <language>en</language>
     <item>
+      <title>Version 1.1.1</title>
+      <pubDate>Wed, 29 Apr 2026 11:00:00 +0000</pubDate>
+      <sparkle:version>11</sparkle:version>
+      <sparkle:shortVersionString>1.1.1</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[
+        <h3>Fixes</h3>
+        <ul>
+          <li>Menu bar icon no longer takes on the system accent color when its menu is open. Honors the standard macOS menu-bar selection background regardless of accent setting.</li>
+        </ul>
+      ]]></description>
+      <enclosure
+        url="https://github.com/behlock/uptrack/releases/download/v1.1.1/uptrack-1.1.1.zip"
+        sparkle:edSignature="oYdqzDKIEfMsTzozpL7Y/WivSQCpDpU98FNlWlTXy+4yE5j+L0qSFE8RNvB+mXeImVULtB98BN5Xb5r/nDHICQ=="
+        length="3776509"
+        type="application/octet-stream" />
+    </item>
+    <item>
       <title>Version 1.1.0</title>
       <pubDate>Fri, 17 Apr 2026 14:00:00 +0000</pubDate>
       <sparkle:version>10</sparkle:version>
