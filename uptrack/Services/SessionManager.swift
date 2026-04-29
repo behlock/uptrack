@@ -131,18 +131,24 @@ final class SessionManager: ObservableObject {
               track.artworkData == nil else { return }
 
         let db = database
-        Task.detached(priority: .utility) { [weak self] in
-            guard let resized = SessionManager.resizeArtwork(data) else { return }
-            do {
-                try db.updateTrackEntryArtwork(id: trackId, artworkData: resized)
-            } catch {
-                debugLog("[SessionManager] Failed to update track artwork: \(error)")
-                return
-            }
-            await MainActor.run {
-                guard let self, self.currentTrack?.id == trackId else { return }
-                self.currentTrack?.artworkData = resized
-            }
+        // Stay on the main actor for the outer Task; hop to a detached child Task only
+        // for the resize + DB update. Mirrors the startNewTrack pattern (93a6dca) to
+        // avoid Swift 6 "task-isolated self in main-actor closure" diagnostics.
+        Task { [weak self] in
+            let resized: Data? = await Task.detached(priority: .utility) { () -> Data? in
+                guard let resized = SessionManager.resizeArtwork(data) else { return nil }
+                do {
+                    try db.updateTrackEntryArtwork(id: trackId, artworkData: resized)
+                } catch {
+                    debugLog("[SessionManager] Failed to update track artwork: \(error)")
+                    return nil
+                }
+                return resized
+            }.value
+
+            guard let self, let resized else { return }
+            guard self.currentTrack?.id == trackId else { return }
+            self.currentTrack?.artworkData = resized
         }
     }
 
