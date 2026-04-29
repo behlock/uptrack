@@ -15,6 +15,7 @@ struct uptrackApp: App {
         } label: {
             Image("MenuBarIcon")
                 .renderingMode(.template)
+                .foregroundStyle(.primary)
         }
         .menuBarExtraStyle(.menu)
     }
