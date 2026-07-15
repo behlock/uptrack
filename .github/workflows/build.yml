@@ -50,7 +50,15 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install SwiftFormat
-        run: brew install swiftformat
+        # Pinned so lint results match local runs; the runner image's own
+        # swiftformat (or brew's latest) can enable different default rules.
+        env:
+          SWIFTFORMAT_VERSION: 0.62.1
+        run: |
+          curl -fsSL -o swiftformat.zip "https://github.com/nicklockwood/SwiftFormat/releases/download/${SWIFTFORMAT_VERSION}/swiftformat.zip"
+          unzip -o -q swiftformat.zip -d /tmp/swiftformat
+          chmod +x /tmp/swiftformat/swiftformat
+          /tmp/swiftformat/swiftformat --version
 
       - name: Lint
-        run: swiftformat --lint .
+        run: /tmp/swiftformat/swiftformat --lint .
