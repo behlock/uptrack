@@ -1,3 +1,4 @@
+import os
 import Foundation
 import GRDB
 
@@ -12,7 +13,7 @@ final class DatabaseManager: Sendable {
         config.prepareDatabase { db in
             try db.execute(sql: "PRAGMA foreign_keys = ON")
             #if DEBUG
-            db.trace { debugLog("SQL: \($0)") }
+            db.trace { Logger.database.debug("SQL: \($0)") }
             #endif
         }
         dbQueue = try DatabaseQueue(path: Constants.databaseURL.path, configuration: config)
@@ -34,7 +35,7 @@ final class DatabaseManager: Sendable {
     func createSession(_ session: PlaybackSession) throws -> PlaybackSession {
         try dbQueue.write { db in
             let record = try session.inserted(db)
-            debugLog("[DatabaseManager] Created session id=\(record.id ?? -1)")
+            Logger.database.debug("Created session id=\(record.id ?? -1)")
             return record
         }
     }
@@ -101,32 +102,38 @@ final class DatabaseManager: Sendable {
 
     // MARK: - Recent Tracks
 
-    func recentTrackEntriesWithContext(limit: Int) throws -> [BezelTrackItem] {
-        try dbQueue.read { db in
-            let rows = try Row.fetchAll(db, sql: """
-                SELECT t.id, t.title, t.artist, t.album, t.artwork_data,
-                       t.duration_seconds, t.started_at, t.source_uri,
-                       s.app_name, s.app_bundle_id, s.output_device_name
-                FROM track_entries t
-                INNER JOIN playback_sessions s ON s.id = t.session_id
-                ORDER BY t.started_at DESC
-                LIMIT ?
-                """, arguments: [limit])
-            return rows.map { row in
-                BezelTrackItem(
-                    id: row["id"],
-                    title: row["title"],
-                    artist: row["artist"],
-                    album: row["album"],
-                    artworkData: row["artwork_data"],
-                    durationSeconds: row["duration_seconds"],
-                    startedAt: row["started_at"],
-                    appName: row["app_name"],
-                    appBundleId: row["app_bundle_id"],
-                    outputDeviceName: row["output_device_name"],
-                    sourceURI: row["source_uri"]
-                )
-            }
+    /// Async sequence that emits the most recent tracks immediately and then
+    /// re-emits whenever the underlying tables change.
+    func recentTracksSequence(limit: Int) -> AsyncValueObservation<[BezelTrackItem]> {
+        ValueObservation
+            .tracking { db in try Self.fetchRecentTracks(db, limit: limit) }
+            .values(in: dbQueue)
+    }
+
+    private static func fetchRecentTracks(_ db: Database, limit: Int) throws -> [BezelTrackItem] {
+        let rows = try Row.fetchAll(db, sql: """
+            SELECT t.id, t.title, t.artist, t.album, t.artwork_data,
+                   t.duration_seconds, t.started_at, t.source_uri,
+                   s.app_name, s.app_bundle_id, s.output_device_name
+            FROM track_entries t
+            INNER JOIN playback_sessions s ON s.id = t.session_id
+            ORDER BY t.started_at DESC
+            LIMIT ?
+            """, arguments: [limit])
+        return rows.map { row in
+            BezelTrackItem(
+                id: row["id"],
+                title: row["title"],
+                artist: row["artist"],
+                album: row["album"],
+                artworkData: row["artwork_data"],
+                durationSeconds: row["duration_seconds"],
+                startedAt: row["started_at"],
+                appName: row["app_name"],
+                appBundleId: row["app_bundle_id"],
+                outputDeviceName: row["output_device_name"],
+                sourceURI: row["source_uri"]
+            )
         }
     }
 

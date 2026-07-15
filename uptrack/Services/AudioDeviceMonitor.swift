@@ -2,8 +2,8 @@ import CoreAudio
 import Foundation
 
 @MainActor
-final class AudioDeviceMonitor: ObservableObject {
-    @Published private(set) var currentDevice = AudioDevice(uid: "", name: "")
+final class AudioDeviceMonitor {
+    private(set) var currentDevice = AudioDevice(uid: "", name: "")
 
     // nonisolated(unsafe) is required because AudioObjectAddPropertyListenerBlock captures
     // this block outside of Swift's concurrency model. Safe because the block is only set/cleared

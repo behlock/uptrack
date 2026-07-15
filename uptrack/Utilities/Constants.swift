@@ -37,11 +37,6 @@ enum Constants {
 
     /// Maximum artwork data size before processing (5 MB)
     static let maxArtworkDataSize = 5 * 1024 * 1024
-
-    /// Debug log file
-    static var debugLogURL: URL {
-        databaseDirectoryURL.appendingPathComponent("debug.log")
-    }
 }
 
 /// Truncate a metadata string to prevent storage of excessively long values
@@ -49,51 +44,4 @@ func truncateMetadata(_ value: String?) -> String? {
     guard let value, !value.isEmpty else { return value }
     if value.count <= Constants.maxMetadataStringLength { return value }
     return String(value.prefix(Constants.maxMetadataStringLength))
-}
-
-// MARK: - Debug logging
-
-private final class DebugLogger: @unchecked Sendable {
-    static let shared = DebugLogger()
-    private let queue = DispatchQueue(label: "com.uptrack.debugLog", qos: .utility)
-    private let formatter = ISO8601DateFormatter()
-    private var fileHandle: FileHandle?
-
-    func log(_ message: String, date: Date) {
-        queue.async { [self] in
-            let line = "[\(formatter.string(from: date))] \(message)\n"
-            guard let data = line.data(using: .utf8) else { return }
-
-            if fileHandle == nil {
-                let url = Constants.debugLogURL
-                if !FileManager.default.fileExists(atPath: url.path) {
-                    FileManager.default.createFile(atPath: url.path, contents: nil)
-                }
-                fileHandle = try? FileHandle(forWritingTo: url)
-                fileHandle?.seekToEndOfFile()
-            }
-
-            if let handle = fileHandle {
-                handle.write(data)
-            }
-        }
-    }
-
-    func shutdown() {
-        queue.sync {
-            try? fileHandle?.close()
-            fileHandle = nil
-        }
-    }
-}
-
-func debugLogShutdown() {
-    DebugLogger.shared.shutdown()
-}
-
-func debugLog(_ message: String) {
-    #if DEBUG
-    print(message)
-    DebugLogger.shared.log(message, date: Date())
-    #endif
 }

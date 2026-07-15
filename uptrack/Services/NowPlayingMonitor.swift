@@ -1,3 +1,4 @@
+import os
 import AppKit
 import Foundation
 
@@ -79,7 +80,7 @@ private struct DistributedMediaInfo: Sendable {
 }
 
 @MainActor
-final class NowPlayingMonitor: ObservableObject {
+final class NowPlayingMonitor {
     private let sessionManager: SessionManager
     private let audioDeviceMonitor: AudioDeviceMonitor
 
@@ -119,7 +120,7 @@ final class NowPlayingMonitor: ObservableObject {
     }
 
     func start() {
-        debugLog("[NowPlayingMonitor] Starting...")
+        Logger.nowPlaying.debug("Starting...")
 
         // Try MediaRemote first — will work on macOS <26
         startMediaRemote()
@@ -169,7 +170,7 @@ final class NowPlayingMonitor: ObservableObject {
                 }
             }
             observations.append((.distributed, obs))
-            debugLog("[NowPlayingMonitor] Registered distributed notification: \(name.rawValue)")
+            Logger.nowPlaying.debug("Registered distributed notification: \(name.rawValue)")
         }
     }
 
@@ -183,7 +184,7 @@ final class NowPlayingMonitor: ObservableObject {
             return
         }
 
-        debugLog("[NowPlayingMonitor] Distributed: \(info.appName) | \(info.title ?? "nil") - \(info.artist ?? "nil") | state: \(info.playerState ?? "nil") | duration: \(info.durationSeconds ?? -1)")
+        Logger.nowPlaying.debug("Distributed: \(info.appName) | \(info.title ?? "nil") - \(info.artist ?? "nil") | state: \(info.playerState ?? "nil") | duration: \(info.durationSeconds ?? -1)")
 
         sessionManager.handleNowPlayingUpdate(
             NowPlayingUpdate(
@@ -218,11 +219,9 @@ final class NowPlayingMonitor: ObservableObject {
         let title = info.title
         let artist = info.artist
         let bundleId = info.bundleId
-        ArtworkFetcher.fetch(bundleId: bundleId) { [weak self] data in
-            guard let data else { return }
-            Task { @MainActor in
-                self?.sessionManager.patchCurrentTrackArtwork(data, title: title, artist: artist)
-            }
+        Task { [weak self] in
+            guard let data = await ArtworkFetcher.fetch(bundleId: bundleId) else { return }
+            self?.sessionManager.patchCurrentTrackArtwork(data, title: title, artist: artist)
         }
     }
 
@@ -230,11 +229,11 @@ final class NowPlayingMonitor: ObservableObject {
 
     private func startMediaRemote() {
         guard MediaRemoteBridge.isAvailable else {
-            debugLog("[NowPlayingMonitor] MediaRemote framework not available")
+            Logger.nowPlaying.debug("MediaRemote framework not available")
             return
         }
 
-        debugLog("[NowPlayingMonitor] MediaRemote available, attempting registration...")
+        Logger.nowPlaying.debug("MediaRemote available, attempting registration...")
         MediaRemoteBridge.registerForNowPlayingNotifications?(DispatchQueue.main)
 
         // Always register observers — they'll start firing when playback begins
@@ -247,11 +246,11 @@ final class NowPlayingMonitor: ObservableObject {
             Task { @MainActor in
                 guard let self else { return }
                 if hasData {
-                    debugLog("[NowPlayingMonitor] MediaRemote is returning data — using as primary source")
+                    Logger.nowPlaying.debug("MediaRemote is returning data — using as primary source")
                     self.primarySource = .mediaRemote
                     self.processMediaRemoteParsed(parsed)
                 } else {
-                    debugLog("[NowPlayingMonitor] MediaRemote returned empty — will activate on first callback")
+                    Logger.nowPlaying.debug("MediaRemote returned empty — will activate on first callback")
                 }
             }
         }
@@ -311,7 +310,7 @@ final class NowPlayingMonitor: ObservableObject {
     private func processMediaRemoteParsed(_ info: MRParsedInfo) {
         // Promote MediaRemote to primary the first time we see real metadata.
         if !isMediaRemotePrimary && (info.title != nil || info.artist != nil) {
-            debugLog("[NowPlayingMonitor] MediaRemote now returning data — suppressing distributed notifications")
+            Logger.nowPlaying.debug("MediaRemote now returning data — suppressing distributed notifications")
             primarySource = .mediaRemote
         }
 

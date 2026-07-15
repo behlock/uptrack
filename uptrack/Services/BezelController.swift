@@ -1,17 +1,20 @@
 import AppKit
 import KeyboardShortcuts
+import Observation
+import os
 import SwiftUI
 
 @MainActor
-final class BezelController: ObservableObject {
-    @Published var currentIndex: Int = 0
-    @Published var items: [BezelTrackItem] = []
+@Observable
+final class BezelController {
+    private(set) var currentIndex: Int = 0
+    private(set) var items: [BezelTrackItem] = []
 
-    private let databaseManager: DatabaseManager
-    private var panel: BezelPanel?
+    private let trackStore: TrackHistoryStore
+    @ObservationIgnored private var panel: BezelPanel?
 
-    init(databaseManager: DatabaseManager) {
-        self.databaseManager = databaseManager
+    init(trackStore: TrackHistoryStore) {
+        self.trackStore = trackStore
     }
 
     var currentItem: BezelTrackItem? {
@@ -24,18 +27,14 @@ final class BezelController: ObservableObject {
     func show() {
         let wasVisible = panel?.isVisible == true
 
-        // Always refresh from DB so re-opens reflect tracks added since last show
-        do {
-            let tracks = try databaseManager.recentTrackEntriesWithContext(limit: Constants.recentTrackLimit)
-            guard !tracks.isEmpty else {
-                debugLog("[BezelController] No tracks to show")
-                return
-            }
-            items = tracks
-        } catch {
-            debugLog("[BezelController] Failed to load tracks: \(error)")
+        // Snapshot the store so the list is stable while the bezel is open,
+        // even if new tracks arrive mid-browse.
+        let tracks = trackStore.tracks
+        guard !tracks.isEmpty else {
+            Logger.bezel.debug("No tracks to show")
             return
         }
+        items = tracks
 
         if wasVisible {
             // Already visible: treat repeat hotkey as "next track".

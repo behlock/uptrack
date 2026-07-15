@@ -1,3 +1,4 @@
+import os
 import Foundation
 
 final class MediaRemoteBridge: Sendable {
@@ -57,15 +58,15 @@ final class MediaRemoteBridge: Sendable {
 
     private static func resolveNotificationName(_ symbolName: String) -> NSNotification.Name {
         guard let bundle else {
-            debugLog("[MediaRemoteBridge] Bundle not loaded, using fallback name: \(symbolName)")
+            Logger.mediaRemote.debug("Bundle not loaded, using fallback name: \(symbolName)")
             return NSNotification.Name(symbolName)
         }
         guard let ptr = CFBundleGetDataPointerForName(bundle, symbolName as CFString) else {
-            debugLog("[MediaRemoteBridge] Could not resolve symbol \(symbolName), using as literal")
+            Logger.mediaRemote.debug("Could not resolve symbol \(symbolName), using as literal")
             return NSNotification.Name(symbolName)
         }
         let name = ptr.assumingMemoryBound(to: NSString.self).pointee as String
-        debugLog("[MediaRemoteBridge] Resolved \(symbolName) -> \(name)")
+        Logger.mediaRemote.debug("Resolved \(symbolName) -> \(name)")
         return NSNotification.Name(name)
     }
 

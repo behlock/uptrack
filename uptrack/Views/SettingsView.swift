@@ -1,11 +1,9 @@
-import SwiftUI
-import AppKit
 import KeyboardShortcuts
 import ServiceManagement
+import SwiftUI
 
 struct SettingsView: View {
-    let onCheckForUpdates: () -> Void
-    let canCheckForUpdates: Bool
+    @Environment(UpdaterController.self) private var updater
 
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
 
@@ -50,53 +48,13 @@ struct SettingsView: View {
 
                 Spacer()
 
-                Button("check for updates", action: onCheckForUpdates)
+                Button("check for updates") { updater.checkForUpdates() }
                     .buttonStyle(.glass)
-                    .disabled(!canCheckForUpdates)
+                    .disabled(!updater.canCheckForUpdates)
             }
-
         }
         .padding(24)
         .frame(width: 300)
         .onAppear { launchAtLogin = SMAppService.mainApp.status == .enabled }
-    }
-}
-
-@MainActor
-final class SettingsWindowController {
-    private static var window: NSWindow?
-
-    static func show(onCheckForUpdates: @escaping () -> Void, canCheckForUpdates: Bool) {
-        let settingsView = SettingsView(
-            onCheckForUpdates: onCheckForUpdates,
-            canCheckForUpdates: canCheckForUpdates
-        )
-
-        if let existing = window, existing.isVisible {
-            let hostingView = NSHostingView(rootView: settingsView)
-            hostingView.setFrameSize(hostingView.fittingSize)
-            existing.contentView = hostingView
-            existing.makeKeyAndOrderFront(nil)
-            NSApp.activate(ignoringOtherApps: true)
-            return
-        }
-
-        let hostingView = NSHostingView(rootView: settingsView)
-        hostingView.setFrameSize(hostingView.fittingSize)
-
-        let win = NSWindow(
-            contentRect: NSRect(origin: .zero, size: hostingView.fittingSize),
-            styleMask: [.titled, .closable],
-            backing: .buffered,
-            defer: false
-        )
-        win.contentView = hostingView
-        win.title = "settings"
-        win.center()
-        win.isReleasedWhenClosed = false
-        win.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
-
-        window = win
     }
 }

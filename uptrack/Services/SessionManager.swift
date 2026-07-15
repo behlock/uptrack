@@ -1,5 +1,7 @@
 import AppKit
 import Foundation
+import Observation
+import os
 
 /// A now-playing snapshot from either metadata source (MediaRemote or
 /// distributed notifications), normalized for session tracking.
@@ -17,10 +19,9 @@ struct NowPlayingUpdate: Sendable {
 }
 
 @MainActor
-final class SessionManager: ObservableObject {
-    @Published var currentSession: PlaybackSession?
-    @Published var currentTrack: TrackEntry?
-    @Published var isPlaying: Bool = false
+final class SessionManager {
+    private(set) var currentSession: PlaybackSession?
+    private(set) var currentTrack: TrackEntry?
 
     private let database: DatabaseManager
     private var pauseTimer: Timer?
@@ -29,9 +30,13 @@ final class SessionManager: ObservableObject {
     private var lastTrackTitle: String?
     private var lastTrackArtist: String?
     private var trackStartedAt: Date?
-    /// True between scheduling a new track entry and its async persistence completing.
-    /// Prevents duplicate track inserts while artwork is being resized off-main.
-    private var pendingTrackStart = false
+    /// In-flight track insert (artwork resize + DB write happen off-main).
+    /// Non-nil while an insert is pending; awaited by the artwork patch so it
+    /// lands on the freshly inserted row. Prevents duplicate inserts.
+    private var trackInsertTask: Task<Void, Never>?
+    /// Bumped whenever track state is torn down (reset / clear all). In-flight
+    /// inserts compare against it and drop their result if stale.
+    private var trackGeneration = 0
 
     init(database: DatabaseManager) {
         self.database = database
@@ -40,13 +45,12 @@ final class SessionManager: ObservableObject {
         do {
             try database.closeStaleActiveSessions()
         } catch {
-            debugLog("[SessionManager] Failed to close stale sessions: \(error)")
+            Logger.session.debug("Failed to close stale sessions: \(error)")
         }
     }
 
     func handleNowPlayingUpdate(_ update: NowPlayingUpdate, device: AudioDevice) {
-        debugLog("[SessionManager] handleNowPlayingUpdate: \(update.appName) | \(update.title ?? "nil") - \(update.artist ?? "nil") | playing: \(update.isPlaying) | device: \(device.name)")
-        self.isPlaying = update.isPlaying
+        Logger.session.debug("handleNowPlayingUpdate: \(update.appName) | \(update.title ?? "nil") - \(update.artist ?? "nil") | playing: \(update.isPlaying) | device: \(device.name)")
 
         if !update.isPlaying {
             handlePause()
@@ -60,12 +64,12 @@ final class SessionManager: ObservableObject {
         let deviceChanged = lastDeviceUID != nil && lastDeviceUID != device.uid
 
         if appChanged || deviceChanged {
-            debugLog("[SessionManager] App/device changed, closing session")
+            Logger.session.debug("App/device changed, closing session")
             closeCurrentSession()
         }
 
         if currentSession == nil {
-            debugLog("[SessionManager] Creating new session for \(update.appName)")
+            Logger.session.debug("Creating new session for \(update.appName)")
             startNewSession(
                 appBundleId: update.appBundleId,
                 appName: update.appName,
@@ -77,8 +81,8 @@ final class SessionManager: ObservableObject {
         let trackChanged = (update.title != lastTrackTitle || update.artist != lastTrackArtist)
             && (update.title != nil || update.artist != nil)
 
-        if trackChanged || (currentTrack == nil && !pendingTrackStart) {
-            debugLog("[SessionManager] Track changed: \(update.title ?? "nil") - \(update.artist ?? "nil"), saving...")
+        if trackChanged || (currentTrack == nil && trackInsertTask == nil) {
+            Logger.session.debug("Track changed: \(update.title ?? "nil") - \(update.artist ?? "nil"), saving...")
             finalizeCurrentTrack(elapsed: update.elapsedSeconds)
             startNewTrack(
                 title: update.title,
@@ -88,7 +92,6 @@ final class SessionManager: ObservableObject {
                 duration: update.durationSeconds,
                 sourceURI: update.trackURI
             )
-            debugLog("[SessionManager] Track saved, currentTrack id: \(currentTrack?.id ?? -1)")
         }
 
         lastAppBundleId = update.appBundleId
@@ -108,49 +111,38 @@ final class SessionManager: ObservableObject {
         do {
             try database.updateTrackEntrySourceURI(id: trackId, sourceURI: uri)
         } catch {
-            debugLog("[SessionManager] Failed to update track URI: \(error)")
+            Logger.session.debug("Failed to update track URI: \(error)")
         }
     }
 
     /// Patch in artwork fetched out-of-band (e.g. via AppleScript on macOS 26+ where
     /// MediaRemote no longer surfaces image data). Title/artist are passed by the caller
     /// so we can drop the patch if the user has skipped tracks while the fetch was
-    /// in flight. If the new track is still being inserted (`pendingTrackStart`), we
-    /// retry once after a short delay.
+    /// in flight. Awaits any in-flight track insert so the patch targets the new row.
     func patchCurrentTrackArtwork(_ data: Data, title: String?, artist: String?) {
-        if currentTrack == nil && pendingTrackStart
-            && lastTrackTitle == title && lastTrackArtist == artist {
-            Task { @MainActor [weak self] in
-                try? await Task.sleep(nanoseconds: 250_000_000)
-                self?.patchCurrentTrackArtwork(data, title: title, artist: artist)
-            }
-            return
-        }
-
-        guard let track = currentTrack,
-              let trackId = track.id,
-              track.title == title,
-              track.artist == artist,
-              track.artworkData == nil else { return }
-
-        let db = database
-        // Stay on the main actor for the outer Task; hop to a detached child Task only
-        // for the resize + DB update. Mirrors the startNewTrack pattern (93a6dca) to
-        // avoid Swift 6 "task-isolated self in main-actor closure" diagnostics.
         Task { [weak self] in
+            await self?.trackInsertTask?.value
+
+            guard let self,
+                  let track = self.currentTrack,
+                  let trackId = track.id,
+                  track.title == title,
+                  track.artist == artist,
+                  track.artworkData == nil else { return }
+
+            let db = self.database
             let resized: Data? = await Task.detached(priority: .utility) { () -> Data? in
                 guard let resized = SessionManager.resizeArtwork(data) else { return nil }
                 do {
                     try db.updateTrackEntryArtwork(id: trackId, artworkData: resized)
                 } catch {
-                    debugLog("[SessionManager] Failed to update track artwork: \(error)")
+                    Logger.session.debug("Failed to update track artwork: \(error)")
                     return nil
                 }
                 return resized
             }.value
 
-            guard let self, let resized else { return }
-            guard self.currentTrack?.id == trackId else { return }
+            guard let resized, self.currentTrack?.id == trackId else { return }
             self.currentTrack?.artworkData = resized
         }
     }
@@ -158,7 +150,6 @@ final class SessionManager: ObservableObject {
     /// Reset state after all sessions have been deleted (e.g. "clear all").
     func resetAfterClearAll() {
         resetState()
-        isPlaying = false
     }
 
     // MARK: - Private
@@ -166,12 +157,11 @@ final class SessionManager: ObservableObject {
     private func handlePause() {
         guard currentSession != nil else { return }
 
-        isPlaying = false
         if let sessionId = currentSession?.id {
             do {
                 try database.updateSessionActive(id: sessionId, isActive: false)
             } catch {
-                debugLog("[SessionManager] Failed to update session active state: \(error)")
+                Logger.session.debug("Failed to update session active state: \(error)")
             }
             currentSession?.isActive = false
         }
@@ -209,7 +199,7 @@ final class SessionManager: ObservableObject {
             let saved = try database.createSession(session)
             currentSession = saved
         } catch {
-            debugLog("[SessionManager] Failed to create session: \(error)")
+            Logger.session.debug("Failed to create session: \(error)")
         }
     }
 
@@ -227,13 +217,13 @@ final class SessionManager: ObservableObject {
             do {
                 try database.deleteSession(id: sessionId)
             } catch {
-                debugLog("[SessionManager] Failed to delete short session: \(error)")
+                Logger.session.debug("Failed to delete short session: \(error)")
             }
         } else {
             do {
                 try database.closeSession(id: sessionId, endedAt: Date())
             } catch {
-                debugLog("[SessionManager] Failed to close session: \(error)")
+                Logger.session.debug("Failed to close session: \(error)")
             }
         }
 
@@ -248,7 +238,8 @@ final class SessionManager: ObservableObject {
         lastTrackTitle = nil
         lastTrackArtist = nil
         trackStartedAt = nil
-        pendingTrackStart = false
+        trackInsertTask = nil
+        trackGeneration += 1
         cancelPauseTimer()
     }
 
@@ -261,27 +252,25 @@ final class SessionManager: ObservableObject {
         sourceURI: String? = nil
     ) {
         guard let sessionId = currentSession?.id else {
-            debugLog("[SessionManager] startNewTrack: no session id, skipping")
+            Logger.session.debug("startNewTrack: no session id, skipping")
             return
         }
-        debugLog("[SessionManager] startNewTrack: sessionId=\(sessionId) title=\(title ?? "nil") artist=\(artist ?? "nil")")
-
-        pendingTrackStart = true
+        Logger.session.debug("startNewTrack: sessionId=\(sessionId) title=\(title ?? "nil") artist=\(artist ?? "nil")")
 
         let startedAt = Date()
         let db = database
         let artworkTooLarge = (artworkData?.count ?? 0) > Constants.maxArtworkDataSize
         if artworkTooLarge, let artwork = artworkData {
-            debugLog("[SessionManager] Artwork data too large (\(artwork.count) bytes), skipping")
+            Logger.session.debug("Artwork data too large (\(artwork.count) bytes), skipping")
         }
         let artworkForResize = artworkTooLarge ? nil : artworkData
 
-        // Stay on the main actor for the outer Task (inherits @MainActor from enclosing
-        // method); hop to a detached, utility-priority child Task only for the expensive
-        // artwork resize + synchronous DB insert. This avoids Swift 6 "task-isolated self
-        // in main-actor closure" diagnostics that strict concurrency reports when a
-        // detached task captures self directly.
-        Task { [weak self] in
+        trackGeneration += 1
+        let generation = trackGeneration
+
+        // Stay on the main actor for the outer Task; hop to a detached, utility-priority
+        // child Task only for the expensive artwork resize + synchronous DB insert.
+        trackInsertTask = Task { [weak self] in
             let saved = await Task.detached(priority: .utility) { () -> TrackEntry? in
                 let processedArtwork = artworkForResize.flatMap { SessionManager.resizeArtwork($0) }
                 let entry = TrackEntry(
@@ -297,16 +286,16 @@ final class SessionManager: ObservableObject {
                 do {
                     return try db.addTrackEntry(entry)
                 } catch {
-                    debugLog("[SessionManager] Failed to add track entry: \(error)")
+                    Logger.session.debug("Failed to add track entry: \(error)")
                     return nil
                 }
             }.value
 
             guard let self else { return }
-            // If state was reset (e.g. "clear all" or session closed) while the
-            // resize/insert was in flight, drop the result.
-            guard self.pendingTrackStart else { return }
-            self.pendingTrackStart = false
+            // If state was reset or a newer track started while the resize/insert
+            // was in flight, drop the result.
+            guard self.trackGeneration == generation else { return }
+            self.trackInsertTask = nil
             if let saved {
                 self.currentTrack = saved
                 self.trackStartedAt = startedAt
@@ -329,13 +318,13 @@ final class SessionManager: ObservableObject {
         do {
             try database.updateTrackEntryElapsed(id: trackId, elapsedSeconds: elapsedSeconds)
         } catch {
-            debugLog("[SessionManager] Failed to update track elapsed time: \(error)")
+            Logger.session.debug("Failed to update track elapsed time: \(error)")
         }
     }
 
     nonisolated static func resizeArtwork(_ data: Data) -> Data? {
         guard let image = NSImage(data: data) else {
-            debugLog("[SessionManager] resizeArtwork: NSImage(data:) returned nil")
+            Logger.session.debug("resizeArtwork: NSImage(data:) returned nil")
             return nil
         }
 

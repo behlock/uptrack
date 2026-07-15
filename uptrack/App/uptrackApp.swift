@@ -3,14 +3,13 @@ import SwiftUI
 @main
 struct uptrackApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
-    @StateObject private var appState = AppState()
-    @StateObject private var updaterController = UpdaterController()
+    @State private var appState = AppState()
+    @State private var updaterController = UpdaterController()
 
     var body: some Scene {
         MenuBarExtra {
             MenuBarView()
-                .environmentObject(appState)
-                .environmentObject(updaterController)
+                .environment(appState)
                 .onAppear { appDelegate.appState = appState }
         } label: {
             Image("MenuBarIcon")
@@ -18,6 +17,11 @@ struct uptrackApp: App {
                 .foregroundStyle(.primary)
         }
         .menuBarExtraStyle(.menu)
+
+        Settings {
+            SettingsView()
+                .environment(updaterController)
+        }
     }
 }
 
@@ -27,6 +31,5 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         appState?.shutdown()
-        debugLogShutdown()
     }
 }

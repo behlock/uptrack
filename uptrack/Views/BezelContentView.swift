@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct BezelContentView: View {
-    @ObservedObject var controller: BezelController
+    var controller: BezelController
 
     var body: some View {
         Group {

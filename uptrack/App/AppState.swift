@@ -1,30 +1,35 @@
+import KeyboardShortcuts
+import Observation
+import os
 import SwiftUI
 
 @MainActor
-final class AppState: ObservableObject {
-    @Published var currentTrack: TrackEntry?
-    @Published var mediaRemoteAvailable: Bool = true
-    @Published var databaseAvailable: Bool = true
+@Observable
+final class AppState {
+    let mediaRemoteAvailable = MediaRemoteBridge.isAvailable
+    private(set) var databaseAvailable = true
 
     let databaseManager: DatabaseManager?
-    let nowPlayingMonitor: NowPlayingMonitor?
-    let audioDeviceMonitor: AudioDeviceMonitor
+    let trackStore: TrackHistoryStore?
     let sessionManager: SessionManager?
-    let hotkeyManager: HotkeyManager
     let bezelController: BezelController?
+    private let nowPlayingMonitor: NowPlayingMonitor?
+    private let audioDeviceMonitor: AudioDeviceMonitor
 
     init() {
-        debugLog("[AppState] init starting...")
+        Logger.app.debug("init starting...")
         audioDeviceMonitor = AudioDeviceMonitor()
 
         do {
             let db = try DatabaseManager()
             databaseManager = db
-            debugLog("[AppState] Database initialized")
+            Logger.app.debug("Database initialized")
+
+            let store = TrackHistoryStore(database: db)
+            trackStore = store
 
             let sm = SessionManager(database: db)
             sessionManager = sm
-            debugLog("[AppState] SessionManager initialized")
 
             let npm = NowPlayingMonitor(
                 sessionManager: sm,
@@ -33,35 +38,23 @@ final class AppState: ObservableObject {
             nowPlayingMonitor = npm
 
             npm.start()
-            debugLog("[AppState] NowPlayingMonitor started")
             audioDeviceMonitor.startMonitoring()
-            debugLog("[AppState] AudioDeviceMonitor started")
+            Logger.app.debug("Monitors started")
 
-            mediaRemoteAvailable = MediaRemoteBridge.isAvailable
-
-            // Bezel browsing
-            let bc = BezelController(databaseManager: db)
-            bezelController = bc
-            let hk = HotkeyManager()
-            hotkeyManager = hk
-            hk.onHotkeyActivated = { [weak self] in self?.bezelController?.show() }
-            hk.start()
-
-            // Bind session manager state to app state
-            observeSessionManager(sm)
+            bezelController = BezelController(trackStore: store)
         } catch {
-            debugLog("[AppState] Failed to initialize database: \(error)")
+            Logger.app.error("Failed to initialize database: \(error)")
             databaseManager = nil
+            trackStore = nil
             sessionManager = nil
             nowPlayingMonitor = nil
             bezelController = nil
-            hotkeyManager = HotkeyManager()
             databaseAvailable = false
         }
-    }
 
-    private func observeSessionManager(_ sm: SessionManager) {
-        sm.$currentTrack.assign(to: &$currentTrack)
+        KeyboardShortcuts.onKeyDown(for: .showBezel) { [weak self] in
+            self?.bezelController?.show()
+        }
     }
 
     /// Release system-level resources (notification observers, CoreAudio listeners, hotkeys).
@@ -69,6 +62,6 @@ final class AppState: ObservableObject {
     func shutdown() {
         nowPlayingMonitor?.stop()
         audioDeviceMonitor.stopMonitoring()
-        hotkeyManager.stop()
+        KeyboardShortcuts.disable(.showBezel)
     }
 }

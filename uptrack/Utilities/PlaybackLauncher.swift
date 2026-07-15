@@ -1,3 +1,4 @@
+import os
 import AppKit
 import Foundation
 
@@ -9,14 +10,14 @@ enum PlaybackLauncher {
         switch item.source {
         case .spotify:
             if let uri = item.sourceURI {
-                debugLog("[Playback] Spotify via URI: \(uri)")
+                Logger.playback.debug("Spotify via URI: \(uri)")
                 playInSpotify(uri: uri)
             } else {
-                debugLog("[Playback] Spotify via search: \(title)")
+                Logger.playback.debug("Spotify via search: \(title)")
                 searchInSpotify(title: title, artist: item.artist)
             }
         case .appleMusic, .other:
-            debugLog("[Playback] Apple Music search: \(title) — bundleId: \(item.appBundleId)")
+            Logger.playback.debug("Apple Music search: \(title) — bundleId: \(item.appBundleId)")
             searchInAppleMusic(title: title)
         }
     }
@@ -43,14 +44,14 @@ enum PlaybackLauncher {
         let query = [title, artist].compactMap { $0 }.joined(separator: " ")
         guard let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
               let url = URL(string: "spotify:search:\(encoded)") else { return }
-        debugLog("[Spotify] Opening search: \(url)")
+        Logger.playback.debug("Opening search: \(url)")
         NSWorkspace.shared.open(url)
     }
 
     /// Play a specific track in Spotify by URI via AppleScript
     private static func playInSpotify(uri: String) {
         guard isValidSpotifyURI(uri) else {
-            debugLog("[Spotify] Rejected invalid URI: \(uri)")
+            Logger.playback.debug("Rejected invalid URI: \(uri)")
             return
         }
         let escaped = sanitizeForAppleScript(uri)
@@ -59,7 +60,7 @@ enum PlaybackLauncher {
                 play track "\(escaped)"
             end tell
             """
-        debugLog("[Spotify] Playing URI: \(uri)")
+        Logger.playback.debug("Playing URI: \(uri)")
         executeAppleScript(script)
     }
 
@@ -89,7 +90,7 @@ enum PlaybackLauncher {
             if let appleScript = NSAppleScript(source: source) {
                 appleScript.executeAndReturnError(&error)
                 if let error {
-                    debugLog("[AppleScript] Error: \(error)")
+                    Logger.playback.debug("Error: \(error)")
                 }
             }
         }

@@ -1,43 +1,12 @@
 import SwiftUI
-import AppKit
-
-// MARK: - Color Extensions
-
-extension Color {
-    init(light: String, dark: String) {
-        self.init(nsColor: NSColor(name: nil) { appearance in
-            appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
-                ? NSColor(hex: dark)
-                : NSColor(hex: light)
-        })
-    }
-}
-
-extension NSColor {
-    convenience init(hex: String) {
-        let trimmed = hex.trimmingCharacters(in: CharacterSet(charactersIn: "#"))
-        var rgb: UInt64 = 0
-        let parsed = trimmed.count == 6 && Scanner(string: trimmed).scanHexInt64(&rgb)
-        if !parsed {
-            assertionFailure("NSColor(hex:) expects a 6-character hex string, got: \(hex)")
-            rgb = 0xFF00FF // magenta fallback in release builds — visible but non-crashing
-        }
-        self.init(
-            red: CGFloat((rgb >> 16) & 0xFF) / 255,
-            green: CGFloat((rgb >> 8) & 0xFF) / 255,
-            blue: CGFloat(rgb & 0xFF) / 255,
-            alpha: 1
-        )
-    }
-}
 
 // MARK: - Theme
 
 enum uptrackTheme {
     enum Colors {
-        static let textPrimary = Color(light: "#1A1A1A", dark: "#F0F0F0")
-        static let textSecondary = Color(light: "#666666", dark: "#999999")
-        static let textTertiary = Color(light: "#999999", dark: "#666666")
+        static let textPrimary = Color(.textPrimary)
+        static let textSecondary = Color(.textSecondary)
+        static let textTertiary = Color(.textTertiary)
     }
 
     enum Fonts {

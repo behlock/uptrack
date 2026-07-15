@@ -1,3 +1,4 @@
+import os
 import SwiftUI
 
 /// Native-style menu contents. Only view types that `MenuBarExtra(..., style: .menu)`
@@ -5,39 +6,36 @@ import SwiftUI
 /// those. Everything else (ScrollView, HStack, custom button styles, backgrounds,
 /// frames) is silently dropped by the .menu renderer.
 struct MenuBarView: View {
-    @EnvironmentObject var appState: AppState
-    @EnvironmentObject var updaterController: UpdaterController
-    @State private var tracks: [BezelTrackItem] = []
+    @Environment(AppState.self) private var appState
+    @Environment(\.openSettings) private var openSettings
 
     var body: some View {
-        Group {
-            if !appState.mediaRemoteAvailable {
-                Text("⚠︎ mediaremote unavailable — tracking disabled")
-            }
-            if !appState.databaseAvailable {
-                Text("⚠︎ database unavailable — history not saved")
-            }
+        let tracks = appState.trackStore?.tracks ?? []
 
-            if tracks.isEmpty {
-                Text("no tracks yet")
-            } else {
-                ForEach(tracks) { track in
-                    trackButton(track)
-                }
-            }
-
-            Divider()
-
-            if !tracks.isEmpty {
-                Button("clear all") { performClearAll() }
-            }
-            Button("settings…") { showSettings() }
-                .keyboardShortcut(",")
-            Button("quit uptrack") { NSApplication.shared.terminate(nil) }
-                .keyboardShortcut("q")
+        if !appState.mediaRemoteAvailable {
+            Text("⚠︎ mediaremote unavailable — tracking via player notifications only")
         }
-        .onAppear { loadTracks() }
-        .onChange(of: appState.currentTrack?.id) { loadTracks() }
+        if !appState.databaseAvailable {
+            Text("⚠︎ database unavailable — history not saved")
+        }
+
+        if tracks.isEmpty {
+            Text("no tracks yet")
+        } else {
+            ForEach(tracks) { track in
+                trackButton(track)
+            }
+        }
+
+        Divider()
+
+        if !tracks.isEmpty {
+            Button("clear all") { performClearAll() }
+        }
+        Button("settings…") { showSettings() }
+            .keyboardShortcut(",")
+        Button("quit uptrack") { NSApplication.shared.terminate(nil) }
+            .keyboardShortcut("q")
     }
 
     @ViewBuilder
@@ -65,28 +63,17 @@ struct MenuBarView: View {
         return title
     }
 
-    private func loadTracks() {
-        guard let db = appState.databaseManager else { tracks = []; return }
-        Task.detached(priority: .userInitiated) {
-            let loaded = (try? db.recentTrackEntriesWithContext(limit: Constants.recentTrackLimit)) ?? []
-            await MainActor.run { self.tracks = loaded }
-        }
-    }
-
     private func performClearAll() {
         do {
             try appState.databaseManager?.deleteAllSessions()
         } catch {
-            debugLog("[MenuBarView] Failed to clear all sessions: \(error)")
+            Logger.app.debug("Failed to clear all sessions: \(error)")
         }
         appState.sessionManager?.resetAfterClearAll()
-        tracks = []
     }
 
     private func showSettings() {
-        SettingsWindowController.show(
-            onCheckForUpdates: { updaterController.checkForUpdates() },
-            canCheckForUpdates: updaterController.canCheckForUpdates
-        )
+        openSettings()
+        NSApp.activate(ignoringOtherApps: true)
     }
 }
