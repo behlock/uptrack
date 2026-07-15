@@ -27,11 +27,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         appState?.shutdown()
-        do {
-            try appState?.databaseManager?.deleteAllSessions()
-        } catch {
-            debugLog("[AppDelegate] Failed to clear database on quit: \(error)")
-        }
         debugLogShutdown()
     }
 }

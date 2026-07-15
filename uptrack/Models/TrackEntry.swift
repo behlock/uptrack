@@ -34,7 +34,3 @@ extension TrackEntry: FetchableRecord, PersistableRecord {
         id = inserted.rowID
     }
 }
-
-extension TrackEntry {
-    static let session = belongsTo(PlaybackSession.self)
-}

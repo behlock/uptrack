@@ -72,4 +72,4 @@ build/
 build-local/
 DerivedData/
 *.xcarchive
-PBTrack-*.zip
+uptrack-*.zip

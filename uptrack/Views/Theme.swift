@@ -11,10 +11,6 @@ extension Color {
                 : NSColor(hex: light)
         })
     }
-
-    init(hex: String) {
-        self.init(nsColor: NSColor(hex: hex))
-    }
 }
 
 extension NSColor {
@@ -39,22 +35,12 @@ extension NSColor {
 
 enum uptrackTheme {
     enum Colors {
-        static let background = Color(light: "#FAFAFA", dark: "#1A1A1A")
-        static let surface = Color(light: "#FFFFFF", dark: "#242424")
         static let textPrimary = Color(light: "#1A1A1A", dark: "#F0F0F0")
         static let textSecondary = Color(light: "#666666", dark: "#999999")
         static let textTertiary = Color(light: "#999999", dark: "#666666")
-        static let accent = Color(hex: "#FF6600")
-        static let border = Color(light: "#E0E0E0", dark: "#333333")
-        static let divider = Color(light: "#EBEBEB", dark: "#2A2A2A")
-        static let warning = Color(light: "#CC5500", dark: "#FF8833")
     }
 
     enum Fonts {
-        static func heading(_ size: CGFloat) -> Font {
-            .system(size: size, weight: .semibold, design: .default)
-        }
-
         static func body(_ size: CGFloat) -> Font {
             .system(size: size, weight: .regular, design: .default)
         }
@@ -62,41 +48,17 @@ enum uptrackTheme {
         static func mono(_ size: CGFloat) -> Font {
             .system(size: size, weight: .regular, design: .monospaced)
         }
-
-        static func label(_ size: CGFloat) -> Font {
-            .system(size: size, weight: .medium, design: .default)
-        }
     }
 
     enum Spacing {
-        static let unit: CGFloat = 8
         static let contentPadding: CGFloat = 16
-        static let sectionGap: CGFloat = 24
-        static let rowVertical: CGFloat = 12
-        static let rowHorizontal: CGFloat = 16
     }
 
     enum Dimensions {
-        static let cornerRadius: CGFloat = 4
-        static let badgeRadius: CGFloat = 2
-        static let borderWidth: CGFloat = 1
-        static let menuBarAppIcon: CGFloat = 24
-        static let historyAppIcon: CGFloat = 28
-        static let trackArtwork: CGFloat = 20
         static let bezelWidth: CGFloat = 300
         static let bezelHeight: CGFloat = 180
         static let bezelArtwork: CGFloat = 64
         static let bezelCornerRadius: CGFloat = 12
-    }
-}
-
-// MARK: - Reusable Views
-
-struct TEDivider: View {
-    var body: some View {
-        Rectangle()
-            .fill(uptrackTheme.Colors.divider)
-            .frame(height: 1)
     }
 }
 
@@ -128,37 +90,6 @@ struct AppNameLabel: View {
             Text(lower)
                 .font(uptrackTheme.Fonts.mono(fontSize))
                 .foregroundStyle(uptrackTheme.Colors.textTertiary)
-        }
-    }
-}
-
-// MARK: - View Modifiers
-
-extension View {
-    func teLabelStyle() -> some View {
-        self
-            .font(uptrackTheme.Fonts.mono(10))
-            .foregroundStyle(uptrackTheme.Colors.textTertiary)
-            .textCase(.lowercase)
-            .tracking(0.5)
-    }
-
-    @ViewBuilder
-    func `if`<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {
-        if condition {
-            transform(self)
-        } else {
-            self
-        }
-    }
-
-    func pointerCursor() -> some View {
-        self.onHover { hovering in
-            if hovering {
-                NSCursor.pointingHand.set()
-            } else {
-                NSCursor.arrow.set()
-            }
         }
     }
 }

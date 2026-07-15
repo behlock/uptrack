@@ -78,23 +78,8 @@ private struct DistributedMediaInfo: Sendable {
     }
 }
 
-struct NowPlayingInfo: Sendable {
-    let appBundleId: String
-    let appName: String
-    let title: String?
-    let artist: String?
-    let album: String?
-    let artworkData: Data?
-    let durationSeconds: Double?
-    let elapsedSeconds: Double?
-    let isPlaying: Bool
-    let trackURI: String?
-}
-
 @MainActor
 final class NowPlayingMonitor: ObservableObject {
-    @Published var latestInfo: NowPlayingInfo?
-
     private let sessionManager: SessionManager
     private let audioDeviceMonitor: AudioDeviceMonitor
 
@@ -199,21 +184,6 @@ final class NowPlayingMonitor: ObservableObject {
         }
 
         debugLog("[NowPlayingMonitor] Distributed: \(info.appName) | \(info.title ?? "nil") - \(info.artist ?? "nil") | state: \(info.playerState ?? "nil") | duration: \(info.durationSeconds ?? -1)")
-
-        let nowPlaying = NowPlayingInfo(
-            appBundleId: info.bundleId,
-            appName: info.appName,
-            title: info.title,
-            artist: info.artist,
-            album: info.album,
-            artworkData: nil,
-            durationSeconds: info.durationSeconds,
-            elapsedSeconds: info.elapsedSeconds,
-            isPlaying: info.isPlaying,
-            trackURI: info.trackURI
-        )
-
-        latestInfo = nowPlaying
 
         sessionManager.handleNowPlayingUpdate(
             appBundleId: info.bundleId,
@@ -345,21 +315,6 @@ final class NowPlayingMonitor: ObservableObject {
 
         let bundleId = mrAppBundleId ?? "unknown"
         let appName = mrAppName ?? "Unknown App"
-
-        let nowPlaying = NowPlayingInfo(
-            appBundleId: bundleId,
-            appName: appName,
-            title: info.title,
-            artist: info.artist,
-            album: info.album,
-            artworkData: info.artworkData,
-            durationSeconds: info.durationSeconds,
-            elapsedSeconds: info.elapsedSeconds,
-            isPlaying: info.playbackRate > 0.0,
-            trackURI: nil
-        )
-
-        latestInfo = nowPlaying
 
         sessionManager.handleNowPlayingUpdate(
             appBundleId: bundleId,

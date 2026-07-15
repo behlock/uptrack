@@ -30,11 +30,3 @@ extension PlaybackSession: FetchableRecord, PersistableRecord {
         id = inserted.rowID
     }
 }
-
-extension PlaybackSession {
-    static let trackEntries = hasMany(TrackEntry.self)
-
-    var trackEntries: QueryInterfaceRequest<TrackEntry> {
-        request(for: PlaybackSession.trackEntries)
-    }
-}

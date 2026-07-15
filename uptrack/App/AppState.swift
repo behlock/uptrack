@@ -2,9 +2,7 @@ import SwiftUI
 
 @MainActor
 final class AppState: ObservableObject {
-    @Published var currentSession: PlaybackSession?
     @Published var currentTrack: TrackEntry?
-    @Published var isPlaying: Bool = false
     @Published var mediaRemoteAvailable: Bool = true
     @Published var databaseAvailable: Bool = true
 
@@ -63,9 +61,7 @@ final class AppState: ObservableObject {
     }
 
     private func observeSessionManager(_ sm: SessionManager) {
-        sm.$currentSession.assign(to: &$currentSession)
         sm.$currentTrack.assign(to: &$currentTrack)
-        sm.$isPlaying.assign(to: &$isPlaying)
     }
 
     /// Release system-level resources (notification observers, CoreAudio listeners, hotkeys).
