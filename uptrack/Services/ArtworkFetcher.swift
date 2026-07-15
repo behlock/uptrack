@@ -14,13 +14,14 @@ enum ArtworkFetcher {
     /// background queue. `completion` is invoked once with `nil` if the app isn't
     /// supported, isn't running, or returned no artwork.
     static func fetch(bundleId: String, completion: @escaping @Sendable (Data?) -> Void) {
-        let lower = bundleId.lowercased()
+        let source = MediaSource(bundleId: bundleId)
         DispatchQueue.global(qos: .userInitiated).async {
-            if lower.contains("spotify") {
+            switch source {
+            case .spotify:
                 completion(fetchSpotifyArtwork())
-            } else if lower.contains("music") || lower.contains("itunes") {
+            case .appleMusic:
                 completion(fetchAppleMusicArtwork())
-            } else {
+            case .other:
                 completion(nil)
             }
         }

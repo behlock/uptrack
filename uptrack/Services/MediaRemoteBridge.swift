@@ -21,23 +21,26 @@ final class MediaRemoteBridge: Sendable {
 
     // MARK: - Resolved functions
 
-    static let registerForNowPlayingNotifications: MRMediaRemoteRegisterForNowPlayingNotifications? = {
-        guard let bundle else { return nil }
-        guard let ptr = CFBundleGetFunctionPointerForName(bundle, "MRMediaRemoteRegisterForNowPlayingNotifications" as CFString) else { return nil }
-        return unsafeBitCast(ptr, to: MRMediaRemoteRegisterForNowPlayingNotifications.self)
-    }()
+    private static func resolveFunction<T>(_ name: String, as type: T.Type) -> T? {
+        guard let bundle,
+              let ptr = CFBundleGetFunctionPointerForName(bundle, name as CFString) else { return nil }
+        return unsafeBitCast(ptr, to: type)
+    }
 
-    static let getNowPlayingInfo: MRMediaRemoteGetNowPlayingInfo? = {
-        guard let bundle else { return nil }
-        guard let ptr = CFBundleGetFunctionPointerForName(bundle, "MRMediaRemoteGetNowPlayingInfo" as CFString) else { return nil }
-        return unsafeBitCast(ptr, to: MRMediaRemoteGetNowPlayingInfo.self)
-    }()
+    static let registerForNowPlayingNotifications = resolveFunction(
+        "MRMediaRemoteRegisterForNowPlayingNotifications",
+        as: MRMediaRemoteRegisterForNowPlayingNotifications.self
+    )
 
-    static let getNowPlayingApplicationPID: MRMediaRemoteGetNowPlayingApplicationPID? = {
-        guard let bundle else { return nil }
-        guard let ptr = CFBundleGetFunctionPointerForName(bundle, "MRMediaRemoteGetNowPlayingApplicationPID" as CFString) else { return nil }
-        return unsafeBitCast(ptr, to: MRMediaRemoteGetNowPlayingApplicationPID.self)
-    }()
+    static let getNowPlayingInfo = resolveFunction(
+        "MRMediaRemoteGetNowPlayingInfo",
+        as: MRMediaRemoteGetNowPlayingInfo.self
+    )
+
+    static let getNowPlayingApplicationPID = resolveFunction(
+        "MRMediaRemoteGetNowPlayingApplicationPID",
+        as: MRMediaRemoteGetNowPlayingApplicationPID.self
+    )
 
     // MARK: - Notification names
     // Discovered at runtime via CFBundleGetDataPointerForName, with hardcoded fallbacks.

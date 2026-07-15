@@ -3,8 +3,7 @@ import Foundation
 
 @MainActor
 final class AudioDeviceMonitor: ObservableObject {
-    @Published var currentDeviceName: String = ""
-    @Published var currentDeviceUID: String = ""
+    @Published private(set) var currentDevice = AudioDevice(uid: "", name: "")
 
     // nonisolated(unsafe) is required because AudioObjectAddPropertyListenerBlock captures
     // this block outside of Swift's concurrency model. Safe because the block is only set/cleared
@@ -49,15 +48,10 @@ final class AudioDeviceMonitor: ObservableObject {
         )
         guard status == noErr else { return }
 
-        // Get device name
-        if let name = getStringProperty(kAudioObjectPropertyName, from: deviceID) {
-            currentDeviceName = name
-        }
-
-        // Get device UID
-        if let uid = getStringProperty(kAudioDevicePropertyDeviceUID, from: deviceID) {
-            currentDeviceUID = uid
-        }
+        currentDevice = AudioDevice(
+            uid: getStringProperty(kAudioDevicePropertyDeviceUID, from: deviceID) ?? currentDevice.uid,
+            name: getStringProperty(kAudioObjectPropertyName, from: deviceID) ?? currentDevice.name
+        )
     }
 
     private func getStringProperty(_ selector: AudioObjectPropertySelector, from deviceID: AudioDeviceID) -> String? {
@@ -90,9 +84,5 @@ final class AudioDeviceMonitor: ObservableObject {
             &address, DispatchQueue.main, block
         )
         listenerBlock = nil
-    }
-
-    var currentDevice: AudioDevice {
-        AudioDevice(uid: currentDeviceUID, name: currentDeviceName)
     }
 }

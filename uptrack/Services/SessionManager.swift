@@ -1,6 +1,21 @@
 import AppKit
 import Foundation
 
+/// A now-playing snapshot from either metadata source (MediaRemote or
+/// distributed notifications), normalized for session tracking.
+struct NowPlayingUpdate: Sendable {
+    let appBundleId: String
+    let appName: String
+    let title: String?
+    let artist: String?
+    let album: String?
+    let artworkData: Data?
+    let durationSeconds: Double?
+    let elapsedSeconds: Double?
+    let isPlaying: Bool
+    let trackURI: String?
+}
+
 @MainActor
 final class SessionManager: ObservableObject {
     @Published var currentSession: PlaybackSession?
@@ -29,23 +44,11 @@ final class SessionManager: ObservableObject {
         }
     }
 
-    func handleNowPlayingUpdate(
-        appBundleId: String,
-        appName: String,
-        title: String?,
-        artist: String?,
-        album: String?,
-        artworkData: Data?,
-        duration: Double?,
-        elapsed: Double?,
-        isPlaying: Bool,
-        trackURI: String? = nil,
-        device: AudioDevice
-    ) {
-        debugLog("[SessionManager] handleNowPlayingUpdate: \(appName) | \(title ?? "nil") - \(artist ?? "nil") | playing: \(isPlaying) | device: \(device.name)")
-        self.isPlaying = isPlaying
+    func handleNowPlayingUpdate(_ update: NowPlayingUpdate, device: AudioDevice) {
+        debugLog("[SessionManager] handleNowPlayingUpdate: \(update.appName) | \(update.title ?? "nil") - \(update.artist ?? "nil") | playing: \(update.isPlaying) | device: \(device.name)")
+        self.isPlaying = update.isPlaying
 
-        if !isPlaying {
+        if !update.isPlaying {
             handlePause()
             return
         }
@@ -53,7 +56,7 @@ final class SessionManager: ObservableObject {
         // Cancel pause timer if resuming
         cancelPauseTimer()
 
-        let appChanged = lastAppBundleId != nil && lastAppBundleId != appBundleId
+        let appChanged = lastAppBundleId != nil && lastAppBundleId != update.appBundleId
         let deviceChanged = lastDeviceUID != nil && lastDeviceUID != device.uid
 
         if appChanged || deviceChanged {
@@ -62,36 +65,36 @@ final class SessionManager: ObservableObject {
         }
 
         if currentSession == nil {
-            debugLog("[SessionManager] Creating new session for \(appName)")
+            debugLog("[SessionManager] Creating new session for \(update.appName)")
             startNewSession(
-                appBundleId: appBundleId,
-                appName: appName,
+                appBundleId: update.appBundleId,
+                appName: update.appName,
                 device: device
             )
         }
 
         // Check if track changed
-        let trackChanged = (title != lastTrackTitle || artist != lastTrackArtist)
-            && (title != nil || artist != nil)
+        let trackChanged = (update.title != lastTrackTitle || update.artist != lastTrackArtist)
+            && (update.title != nil || update.artist != nil)
 
         if trackChanged || (currentTrack == nil && !pendingTrackStart) {
-            debugLog("[SessionManager] Track changed: \(title ?? "nil") - \(artist ?? "nil"), saving...")
-            finalizeCurrentTrack(elapsed: elapsed)
+            debugLog("[SessionManager] Track changed: \(update.title ?? "nil") - \(update.artist ?? "nil"), saving...")
+            finalizeCurrentTrack(elapsed: update.elapsedSeconds)
             startNewTrack(
-                title: title,
-                artist: artist,
-                album: album,
-                artworkData: artworkData,
-                duration: duration,
-                sourceURI: trackURI
+                title: update.title,
+                artist: update.artist,
+                album: update.album,
+                artworkData: update.artworkData,
+                duration: update.durationSeconds,
+                sourceURI: update.trackURI
             )
             debugLog("[SessionManager] Track saved, currentTrack id: \(currentTrack?.id ?? -1)")
         }
 
-        lastAppBundleId = appBundleId
+        lastAppBundleId = update.appBundleId
         lastDeviceUID = device.uid
-        lastTrackTitle = title
-        lastTrackArtist = artist
+        lastTrackTitle = update.title
+        lastTrackArtist = update.artist
     }
 
     func handleSleep() {

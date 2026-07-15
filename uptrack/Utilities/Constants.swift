@@ -1,4 +1,3 @@
-import AppKit
 import Foundation
 
 enum Constants {
@@ -45,6 +44,15 @@ enum Constants {
     }
 }
 
+/// Truncate a metadata string to prevent storage of excessively long values
+func truncateMetadata(_ value: String?) -> String? {
+    guard let value, !value.isEmpty else { return value }
+    if value.count <= Constants.maxMetadataStringLength { return value }
+    return String(value.prefix(Constants.maxMetadataStringLength))
+}
+
+// MARK: - Debug logging
+
 private final class DebugLogger: @unchecked Sendable {
     static let shared = DebugLogger()
     private let queue = DispatchQueue(label: "com.uptrack.debugLog", qos: .utility)
@@ -88,100 +96,4 @@ func debugLog(_ message: String) {
     print(message)
     DebugLogger.shared.log(message, date: Date())
     #endif
-}
-
-/// Sanitize a string for safe interpolation into an AppleScript string literal.
-/// Strips characters that could escape or terminate an AppleScript string.
-private func sanitizeForAppleScript(_ value: String) -> String {
-    var sanitized = value
-        .replacingOccurrences(of: "\\", with: "\\\\")
-        .replacingOccurrences(of: "\"", with: "\\\"")
-        .replacingOccurrences(of: "\u{00AC}", with: "") // ¬ AppleScript line continuation
-    // Strip all control characters (null bytes, tabs, newlines, carriage returns, etc.)
-    sanitized.unicodeScalars.removeAll { CharacterSet.controlCharacters.contains($0) }
-    return sanitized
-}
-
-/// Validate that a string is a well-formed Spotify track URI
-func isValidSpotifyURI(_ uri: String) -> Bool {
-    uri.range(of: #"^spotify:track:[A-Za-z0-9]+$"#, options: .regularExpression) != nil
-}
-
-/// Truncate a metadata string to prevent storage of excessively long values
-func truncateMetadata(_ value: String?) -> String? {
-    guard let value, !value.isEmpty else { return value }
-    if value.count <= Constants.maxMetadataStringLength { return value }
-    return String(value.prefix(Constants.maxMetadataStringLength))
-}
-
-/// Execute an AppleScript on a background queue to prevent main thread blocking
-private func executeAppleScript(_ source: String) {
-    DispatchQueue.global(qos: .userInitiated).async {
-        var error: NSDictionary?
-        if let appleScript = NSAppleScript(source: source) {
-            appleScript.executeAndReturnError(&error)
-            if let error {
-                debugLog("[AppleScript] Error: \(error)")
-            }
-        }
-    }
-}
-
-/// Safely execute an AppleScript search in Apple Music
-func playTrackInAppleMusic(title: String) {
-    let escaped = sanitizeForAppleScript(title)
-
-    let script = """
-        tell application "Music"
-            set results to (search library playlist 1 for "\(escaped)")
-            if results is not {} then
-                play item 1 of results
-            end if
-        end tell
-        """
-
-    executeAppleScript(script)
-}
-
-/// Open a Spotify search via URL scheme
-func playTrackInSpotify(title: String, artist: String?) {
-    let query = [title, artist].compactMap { $0 }.joined(separator: " ")
-    guard let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-          let url = URL(string: "spotify:search:\(encoded)") else { return }
-    debugLog("[Spotify] Opening search: \(url)")
-    NSWorkspace.shared.open(url)
-}
-
-/// Play a bezel track item in the appropriate app, preferring URI-level playback when available.
-func playBezelTrack(_ item: BezelTrackItem) {
-    guard let title = item.title else { return }
-    let bundleId = item.appBundleId.lowercased()
-    if bundleId.contains("spotify") {
-        if let uri = item.sourceURI {
-            debugLog("[Playback] Spotify via URI: \(uri)")
-            playTrackInSpotifyByURI(uri: uri)
-        } else {
-            debugLog("[Playback] Spotify via search: \(title)")
-            playTrackInSpotify(title: title, artist: item.artist)
-        }
-    } else {
-        debugLog("[Playback] Apple Music search: \(title) — bundleId: \(item.appBundleId)")
-        playTrackInAppleMusic(title: title)
-    }
-}
-
-/// Play a specific track in Spotify by URI via AppleScript
-func playTrackInSpotifyByURI(uri: String) {
-    guard isValidSpotifyURI(uri) else {
-        debugLog("[Spotify] Rejected invalid URI: \(uri)")
-        return
-    }
-    let escaped = sanitizeForAppleScript(uri)
-    let script = """
-        tell application "Spotify"
-            play track "\(escaped)"
-        end tell
-        """
-    debugLog("[Spotify] Playing URI: \(uri)")
-    executeAppleScript(script)
 }

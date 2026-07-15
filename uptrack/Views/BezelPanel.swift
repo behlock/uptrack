@@ -174,10 +174,11 @@ final class BezelPanel: NSPanel {
     }
 
     override func flagsChanged(with event: NSEvent) {
+        // Dismiss when the hotkey's modifiers are released. Same rule as the
+        // pollTick backstop — flagsChanged just reacts faster when it does fire.
+        guard !requiredModifiers.isEmpty else { return }
         let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
-            .subtracting([.capsLock, .function, .numericPad])
-        // Dismiss when Option is released (the primary hotkey modifier)
-        if !flags.contains(.option) {
+        if !flags.isSuperset(of: requiredModifiers) {
             stopKeyPolling()
             onDismiss?()
         }

@@ -186,16 +186,18 @@ final class NowPlayingMonitor: ObservableObject {
         debugLog("[NowPlayingMonitor] Distributed: \(info.appName) | \(info.title ?? "nil") - \(info.artist ?? "nil") | state: \(info.playerState ?? "nil") | duration: \(info.durationSeconds ?? -1)")
 
         sessionManager.handleNowPlayingUpdate(
-            appBundleId: info.bundleId,
-            appName: info.appName,
-            title: info.title,
-            artist: info.artist,
-            album: info.album,
-            artworkData: nil,
-            duration: info.durationSeconds,
-            elapsed: info.elapsedSeconds,
-            isPlaying: info.isPlaying,
-            trackURI: info.trackURI,
+            NowPlayingUpdate(
+                appBundleId: info.bundleId,
+                appName: info.appName,
+                title: info.title,
+                artist: info.artist,
+                album: info.album,
+                artworkData: nil,
+                durationSeconds: info.durationSeconds,
+                elapsedSeconds: info.elapsedSeconds,
+                isPlaying: info.isPlaying,
+                trackURI: info.trackURI
+            ),
             device: audioDeviceMonitor.currentDevice
         )
 
@@ -317,16 +319,18 @@ final class NowPlayingMonitor: ObservableObject {
         let appName = mrAppName ?? "Unknown App"
 
         sessionManager.handleNowPlayingUpdate(
-            appBundleId: bundleId,
-            appName: appName,
-            title: info.title,
-            artist: info.artist,
-            album: info.album,
-            artworkData: info.artworkData,
-            duration: info.durationSeconds,
-            elapsed: info.elapsedSeconds,
-            isPlaying: info.playbackRate > 0.0,
-            trackURI: nil,
+            NowPlayingUpdate(
+                appBundleId: bundleId,
+                appName: appName,
+                title: info.title,
+                artist: info.artist,
+                album: info.album,
+                artworkData: info.artworkData,
+                durationSeconds: info.durationSeconds,
+                elapsedSeconds: info.elapsedSeconds,
+                isPlaying: info.playbackRate > 0.0,
+                trackURI: nil
+            ),
             device: audioDeviceMonitor.currentDevice
         )
     }

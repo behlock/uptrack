@@ -88,7 +88,7 @@ final class BezelController: ObservableObject {
     func playCurrentTrack() {
         guard let item = currentItem else { return }
         dismiss()
-        playBezelTrack(item)
+        PlaybackLauncher.play(item)
     }
 
     private func createPanel() {

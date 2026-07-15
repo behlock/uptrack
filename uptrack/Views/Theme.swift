@@ -70,8 +70,8 @@ struct AppNameLabel: View {
     var fontSize: CGFloat = 10
 
     var body: some View {
-        let lower = appName.lowercased()
-        if lower.contains("spotify") {
+        switch MediaSource(bundleId: appBundleId) {
+        case .spotify:
             HStack(spacing: 3) {
                 Image("SpotifyIcon")
                     .resizable()
@@ -82,12 +82,12 @@ struct AppNameLabel: View {
                     .font(uptrackTheme.Fonts.mono(fontSize))
                     .foregroundStyle(uptrackTheme.Colors.textTertiary)
             }
-        } else if lower.contains("music") || lower.contains("itunes") {
+        case .appleMusic:
             Text("\u{f8ff} music")
                 .font(uptrackTheme.Fonts.mono(fontSize))
                 .foregroundStyle(uptrackTheme.Colors.textTertiary)
-        } else {
-            Text(lower)
+        case .other:
+            Text(appName.lowercased())
                 .font(uptrackTheme.Fonts.mono(fontSize))
                 .foregroundStyle(uptrackTheme.Colors.textTertiary)
         }

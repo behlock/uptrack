@@ -42,15 +42,15 @@ struct MenuBarView: View {
 
     @ViewBuilder
     private func trackButton(_ track: BezelTrackItem) -> some View {
-        let canPlay = isPlayable(track) && track.title != nil
+        let canPlay = track.source.isPlayable && track.title != nil
         let title = trackTitleText(track)
-        let lower = track.appBundleId.lowercased()
-        Button(action: { playBezelTrack(track) }) {
-            if lower.contains("spotify") {
+        Button(action: { PlaybackLauncher.play(track) }) {
+            switch track.source {
+            case .spotify:
                 Text("\(title)  ·  \(Image("SpotifyIcon")) spotify")
-            } else if lower.contains("com.apple.music") || lower.contains("com.apple.itunes") {
+            case .appleMusic:
                 Text("\(title)  ·  \u{f8ff} music")
-            } else {
+            case .other:
                 Text(title)
             }
         }
@@ -63,11 +63,6 @@ struct MenuBarView: View {
             return "\(title) — \(artist)"
         }
         return title
-    }
-
-    private func isPlayable(_ track: BezelTrackItem) -> Bool {
-        let lower = track.appBundleId.lowercased()
-        return lower.contains("spotify") || lower.contains("com.apple.music")
     }
 
     private func loadTracks() {
