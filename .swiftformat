@@ -1,0 +1,19 @@
+# SwiftFormat configuration — kept close to the existing code style.
+--swiftversion 6.0
+
+--indent 4
+--maxwidth none
+--importgrouping alpha
+
+# Keep explicit self where written (Swift 6 concurrency often wants it explicit).
+--selfrequired
+--disable redundantSelf
+
+# Don't rewrap or restructure existing code aggressively.
+--disable wrapMultilineStatementBraces
+--disable andOperator
+--disable preferKeyPath
+--disable hoistPatternLet
+--disable unusedArguments
+
+--exclude uptrack.xcodeproj,build,docs

@@ -32,7 +32,9 @@ final class BezelPanel: NSPanel {
         ))
     }
 
-    override var canBecomeKey: Bool { true }
+    override var canBecomeKey: Bool {
+        true
+    }
 
     deinit {
         pollTimer?.invalidate()
@@ -74,11 +76,11 @@ final class BezelPanel: NSPanel {
     private let initialRepeatDelay: TimeInterval = 0.35
     private let repeatInterval: TimeInterval = 0.08
 
-    // keyCode -> navigation direction. true = forward (onArrowUp), false = back.
+    /// keyCode -> navigation direction. true = forward (onArrowUp), false = back.
     private static let navKeys: [UInt16: Bool] = [
-        126: true,  // arrow up
-        124: true,  // arrow right
-        48: true,   // tab (treated as forward regardless of shift)
+        126: true, // arrow up
+        124: true, // arrow right
+        48: true, // tab (treated as forward regardless of shift)
         125: false, // arrow down
         123: false, // arrow left
     ]
@@ -170,7 +172,11 @@ final class BezelPanel: NSPanel {
     }
 
     private func fire(forward: Bool) {
-        if forward { onArrowUp?() } else { onArrowDown?() }
+        if forward {
+            onArrowUp?()
+        } else {
+            onArrowDown?()
+        }
     }
 
     override func flagsChanged(with event: NSEvent) {

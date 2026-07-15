@@ -25,7 +25,6 @@ struct BezelContentView: View {
         .animation(.easeInOut(duration: 0.15), value: controller.currentIndex)
     }
 
-    @ViewBuilder
     private func trackView(_ item: BezelTrackItem) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             // Position indicator
@@ -85,11 +84,17 @@ struct BezelContentView: View {
 
     private func relativeTime(_ date: Date) -> String {
         let seconds = Int(Date().timeIntervalSince(date))
-        if seconds < 60 { return "just now" }
+        if seconds < 60 {
+            return "just now"
+        }
         let minutes = seconds / 60
-        if minutes < 60 { return "\(minutes)m ago" }
+        if minutes < 60 {
+            return "\(minutes)m ago"
+        }
         let hours = minutes / 60
-        if hours < 24 { return "\(hours)h ago" }
+        if hours < 24 {
+            return "\(hours)h ago"
+        }
         let days = hours / 24
         return "\(days)d ago"
     }

@@ -33,12 +33,12 @@ enum ArtworkFetcher {
     private static func spotifyArtworkURL() async -> URL? {
         await Task.detached(priority: .userInitiated) { () -> URL? in
             let script = """
-                tell application "Spotify"
-                    if it is running then
-                        return artwork url of current track
-                    end if
-                end tell
-                """
+            tell application "Spotify"
+                if it is running then
+                    return artwork url of current track
+                end if
+            end tell
+            """
             guard let descriptor = runScript(script, label: "Spotify"),
                   let urlString = descriptor.stringValue,
                   !urlString.isEmpty else { return nil }
@@ -49,19 +49,21 @@ enum ArtworkFetcher {
     private static func appleMusicArtwork() async -> Data? {
         await Task.detached(priority: .userInitiated) { () -> Data? in
             let script = """
-                tell application "Music"
-                    if it is running then
-                        if exists current track then
-                            return raw data of artwork 1 of current track
-                        end if
+            tell application "Music"
+                if it is running then
+                    if exists current track then
+                        return raw data of artwork 1 of current track
                     end if
-                end tell
-                """
+                end if
+            end tell
+            """
             guard let descriptor = runScript(script, label: "Music") else { return nil }
             // `raw data` arrives as a typeData descriptor; fall back to coercion if
             // AppleScript wrapped it as `typePicture` instead.
             let bytes = descriptor.data
-            if !bytes.isEmpty { return bytes }
+            if !bytes.isEmpty {
+                return bytes
+            }
             if let coerced = descriptor.coerce(toDescriptorType: typeData)?.data, !coerced.isEmpty {
                 return coerced
             }

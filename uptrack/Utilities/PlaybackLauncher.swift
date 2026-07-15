@@ -1,6 +1,6 @@
-import os
 import AppKit
 import Foundation
+import os
 
 /// Resumes a historical track in its source app, preferring URI-level
 /// playback (exact track) over a title search.
@@ -27,13 +27,13 @@ enum PlaybackLauncher {
     private static func searchInAppleMusic(title: String) {
         let escaped = sanitizeForAppleScript(title)
         let script = """
-            tell application "Music"
-                set results to (search library playlist 1 for "\(escaped)")
-                if results is not {} then
-                    play item 1 of results
-                end if
-            end tell
-            """
+        tell application "Music"
+            set results to (search library playlist 1 for "\(escaped)")
+            if results is not {} then
+                play item 1 of results
+            end if
+        end tell
+        """
         executeAppleScript(script)
     }
 
@@ -56,10 +56,10 @@ enum PlaybackLauncher {
         }
         let escaped = sanitizeForAppleScript(uri)
         let script = """
-            tell application "Spotify"
-                play track "\(escaped)"
-            end tell
-            """
+        tell application "Spotify"
+            play track "\(escaped)"
+        end tell
+        """
         Logger.playback.debug("Playing URI: \(uri)")
         executeAppleScript(script)
     }

@@ -22,7 +22,9 @@ final class BezelController {
         return items[currentIndex]
     }
 
-    var totalCount: Int { items.count }
+    var totalCount: Int {
+        items.count
+    }
 
     func show() {
         let wasVisible = panel?.isVisible == true

@@ -33,7 +33,8 @@ final class SessionManager {
     /// In-flight track insert (artwork resize + DB write happen off-main).
     /// Non-nil while an insert is pending; awaited by the artwork patch so it
     /// lands on the freshly inserted row. Prevents duplicate inserts.
-    private var trackInsertTask: Task<Void, Never>?
+    /// Internal read access so tests can await insert completion.
+    private(set) var trackInsertTask: Task<Void, Never>?
     /// Bumped whenever track state is torn down (reset / clear all). In-flight
     /// inserts compare against it and drop their result if stale.
     private var trackGeneration = 0

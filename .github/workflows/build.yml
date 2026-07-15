@@ -1,0 +1,56 @@
+name: Build & Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: macos-26
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: |
+          sw_vers
+          xcodebuild -version
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Resolve SPM dependencies
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project uptrack.xcodeproj \
+            -scheme uptrack
+
+      - name: Build & test
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project uptrack.xcodeproj \
+            -scheme uptrack \
+            -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO \
+            | tail -100
+
+  lint:
+    runs-on: macos-26
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install SwiftFormat
+        run: brew install swiftformat
+
+      - name: Lint
+        run: swiftformat --lint .

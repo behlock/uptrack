@@ -19,6 +19,9 @@ packages:
 settings:
   base:
     SWIFT_VERSION: "6.0"
+    # Single source of truth for the app version — Info.plist keys reference these.
+    MARKETING_VERSION: "1.1.1"
+    CURRENT_PROJECT_VERSION: "11"
 
 targets:
   uptrack:
@@ -33,8 +36,8 @@ targets:
         NSAppleEventsUsageDescription: "uptrack needs access to control Music to play tracks from your history."
         CFBundleDisplayName: uptrack
         CFBundleName: uptrack
-        CFBundleShortVersionString: "1.1.1"
-        CFBundleVersion: "11"
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         SUFeedURL: "https://behlock.github.io/uptrack/appcast.xml"
         SUPublicEDKey: "jNPt4Eid/3sp6mOMww36JmNt6v3vgyyJ28N6Q/zgvo4="
     entitlements:
@@ -50,8 +53,6 @@ targets:
         DEVELOPMENT_TEAM: MRU883JADA
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ENABLE_HARDENED_RUNTIME: YES
-        MARKETING_VERSION: "1.1.1"
-        CURRENT_PROJECT_VERSION: "11"
       configs:
         Debug:
           CODE_SIGN_IDENTITY: "Apple Development"
@@ -65,3 +66,29 @@ targets:
       - package: Sparkle
       - sdk: CoreAudio.framework
       - sdk: ServiceManagement.framework
+
+  uptrackTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: uptrackTests
+    dependencies:
+      - target: uptrack
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.uptrack.app.tests
+        GENERATE_INFOPLIST_FILE: YES
+
+schemes:
+  uptrack:
+    build:
+      targets:
+        uptrack: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - uptrackTests
+    archive:
+      config: Release

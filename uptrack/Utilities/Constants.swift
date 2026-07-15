@@ -13,7 +13,7 @@ enum Constants {
             .urls(for: .applicationSupportDirectory, in: .userDomainMask)
             .first
             ?? URL(fileURLWithPath: NSHomeDirectory())
-                .appendingPathComponent("Library/Application Support")
+            .appendingPathComponent("Library/Application Support")
         return appSupport.appendingPathComponent(databaseDirectoryName)
     }
 
@@ -42,6 +42,8 @@ enum Constants {
 /// Truncate a metadata string to prevent storage of excessively long values
 func truncateMetadata(_ value: String?) -> String? {
     guard let value, !value.isEmpty else { return value }
-    if value.count <= Constants.maxMetadataStringLength { return value }
+    if value.count <= Constants.maxMetadataStringLength {
+        return value
+    }
     return String(value.prefix(Constants.maxMetadataStringLength))
 }

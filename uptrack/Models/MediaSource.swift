@@ -19,9 +19,13 @@ enum MediaSource: Sendable {
     }
 
     /// Whether uptrack knows how to resume playback in this app.
-    var isPlayable: Bool { self != .other }
+    var isPlayable: Bool {
+        self != .other
+    }
 }
 
 extension BezelTrackItem {
-    var source: MediaSource { MediaSource(bundleId: appBundleId) }
+    var source: MediaSource {
+        MediaSource(bundleId: appBundleId)
+    }
 }

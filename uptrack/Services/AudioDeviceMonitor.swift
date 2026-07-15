@@ -5,9 +5,9 @@ import Foundation
 final class AudioDeviceMonitor {
     private(set) var currentDevice = AudioDevice(uid: "", name: "")
 
-    // nonisolated(unsafe) is required because AudioObjectAddPropertyListenerBlock captures
-    // this block outside of Swift's concurrency model. Safe because the block is only set/cleared
-    // from @MainActor methods and dispatched on DispatchQueue.main.
+    /// nonisolated(unsafe) is required because AudioObjectAddPropertyListenerBlock captures
+    /// this block outside of Swift's concurrency model. Safe because the block is only set/cleared
+    /// from @MainActor methods and dispatched on DispatchQueue.main.
     private nonisolated(unsafe) var listenerBlock: AudioObjectPropertyListenerBlock?
 
     func startMonitoring() {
@@ -17,7 +17,7 @@ final class AudioDeviceMonitor {
             mElement: kAudioObjectPropertyElementMain
         )
 
-        listenerBlock = { [weak self] (_, _) in
+        listenerBlock = { [weak self] _, _ in
             Task { @MainActor in
                 self?.updateCurrentDevice()
             }

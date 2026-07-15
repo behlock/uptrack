@@ -1,32 +1,48 @@
-import os
 import Foundation
 import GRDB
+import os
 
 final class DatabaseManager: Sendable {
     private let dbQueue: DatabaseQueue
 
-    init() throws {
-        let directoryURL = Constants.databaseDirectoryURL
-        try FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
-
-        var config = Configuration()
-        config.prepareDatabase { db in
-            try db.execute(sql: "PRAGMA foreign_keys = ON")
-            #if DEBUG
-            db.trace { Logger.database.debug("SQL: \($0)") }
-            #endif
-        }
-        dbQueue = try DatabaseQueue(path: Constants.databaseURL.path, configuration: config)
-
+    /// On-disk database in Application Support (production).
+    convenience init() throws {
+        try FileManager.default.createDirectory(
+            at: Constants.databaseDirectoryURL,
+            withIntermediateDirectories: true
+        )
+        let dbQueue = try DatabaseQueue(
+            path: Constants.databaseURL.path,
+            configuration: Self.configuration()
+        )
         // Enable WAL mode (must be outside a transaction)
         try dbQueue.writeWithoutTransaction { db in
             try db.execute(sql: "PRAGMA journal_mode = WAL")
         }
+        try self.init(dbQueue: dbQueue)
+    }
 
-        // Run migrations
+    /// In-memory database (tests).
+    static func inMemory() throws -> DatabaseManager {
+        try DatabaseManager(dbQueue: DatabaseQueue(configuration: configuration()))
+    }
+
+    private init(dbQueue: DatabaseQueue) throws {
+        self.dbQueue = dbQueue
         var migrator = DatabaseMigrator()
         AppMigrations.registerMigrations(&migrator)
         try migrator.migrate(dbQueue)
+    }
+
+    private static func configuration() -> Configuration {
+        var config = Configuration()
+        config.prepareDatabase { db in
+            try db.execute(sql: "PRAGMA foreign_keys = ON")
+            #if DEBUG
+                db.trace { Logger.database.debug("SQL: \($0)") }
+            #endif
+        }
+        return config
     }
 
     // MARK: - Sessions
@@ -112,14 +128,14 @@ final class DatabaseManager: Sendable {
 
     private static func fetchRecentTracks(_ db: Database, limit: Int) throws -> [BezelTrackItem] {
         let rows = try Row.fetchAll(db, sql: """
-            SELECT t.id, t.title, t.artist, t.album, t.artwork_data,
-                   t.duration_seconds, t.started_at, t.source_uri,
-                   s.app_name, s.app_bundle_id, s.output_device_name
-            FROM track_entries t
-            INNER JOIN playback_sessions s ON s.id = t.session_id
-            ORDER BY t.started_at DESC
-            LIMIT ?
-            """, arguments: [limit])
+        SELECT t.id, t.title, t.artist, t.album, t.artwork_data,
+               t.duration_seconds, t.started_at, t.source_uri,
+               s.app_name, s.app_bundle_id, s.output_device_name
+        FROM track_entries t
+        INNER JOIN playback_sessions s ON s.id = t.session_id
+        ORDER BY t.started_at DESC
+        LIMIT ?
+        """, arguments: [limit])
         return rows.map { row in
             BezelTrackItem(
                 id: row["id"],

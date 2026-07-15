@@ -1,8 +1,7 @@
-import os
 import Foundation
+import os
 
 final class MediaRemoteBridge: Sendable {
-
     private nonisolated(unsafe) static let bundle: CFBundle? = {
         let path = "/System/Library/PrivateFrameworks/MediaRemote.framework"
         guard let url = CFURLCreateWithFileSystemPath(
@@ -12,7 +11,9 @@ final class MediaRemoteBridge: Sendable {
     }()
 
     /// Whether the MediaRemote framework was loaded successfully
-    static var isAvailable: Bool { bundle != nil }
+    static var isAvailable: Bool {
+        bundle != nil
+    }
 
     // MARK: - Function type aliases
 
@@ -44,17 +45,14 @@ final class MediaRemoteBridge: Sendable {
     )
 
     // MARK: - Notification names
+
     // Discovered at runtime via CFBundleGetDataPointerForName, with hardcoded fallbacks.
 
-    static let nowPlayingInfoDidChange: NSNotification.Name = {
-        resolveNotificationName("kMRMediaRemoteNowPlayingInfoDidChangeNotification")
-    }()
-    static let nowPlayingApplicationDidChange: NSNotification.Name = {
-        resolveNotificationName("kMRMediaRemoteNowPlayingApplicationDidChangeNotification")
-    }()
-    static let nowPlayingApplicationIsPlayingDidChange: NSNotification.Name = {
-        resolveNotificationName("kMRMediaRemoteNowPlayingApplicationIsPlayingDidChangeNotification")
-    }()
+    static let nowPlayingInfoDidChange: NSNotification.Name = resolveNotificationName("kMRMediaRemoteNowPlayingInfoDidChangeNotification")
+
+    static let nowPlayingApplicationDidChange: NSNotification.Name = resolveNotificationName("kMRMediaRemoteNowPlayingApplicationDidChangeNotification")
+
+    static let nowPlayingApplicationIsPlayingDidChange: NSNotification.Name = resolveNotificationName("kMRMediaRemoteNowPlayingApplicationIsPlayingDidChangeNotification")
 
     private static func resolveNotificationName(_ symbolName: String) -> NSNotification.Name {
         guard let bundle else {
