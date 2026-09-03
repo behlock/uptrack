@@ -116,6 +116,12 @@ final class DatabaseManager: Sendable {
         }
     }
 
+    func fetchTrackEntry(id: Int64) throws -> TrackEntry? {
+        try dbQueue.read { db in
+            try TrackEntry.fetchOne(db, id: id)
+        }
+    }
+
     // MARK: - Recent Tracks
 
     /// Async sequence that emits the most recent tracks immediately and then

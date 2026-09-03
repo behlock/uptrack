@@ -132,3 +132,106 @@ struct SessionManagerTests {
         #expect(manager.currentTrack == nil)
     }
 }
+
+/// Controllable clock for elapsed-time assertions.
+@MainActor
+private final class TestClock {
+    var current = Date(timeIntervalSinceReferenceDate: 800_000_000)
+
+    func advance(_ seconds: TimeInterval) {
+        current.addTimeInterval(seconds)
+    }
+}
+
+@MainActor
+struct SessionManagerListeningTimeTests {
+    private let device = AudioDevice(uid: "device-1", name: "Speakers")
+
+    private func update(title: String? = "Song A", artist: String? = "Artist", isPlaying: Bool = true) -> NowPlayingUpdate {
+        NowPlayingUpdate(
+            appBundleId: "com.spotify.client",
+            appName: "Spotify",
+            title: title,
+            artist: artist,
+            album: nil,
+            artworkData: nil,
+            durationSeconds: 200,
+            elapsedSeconds: 0,
+            isPlaying: isPlaying,
+            trackURI: nil
+        )
+    }
+
+    private func recentTracks(_ db: DatabaseManager) async throws -> [BezelTrackItem] {
+        var iterator = db.recentTracksSequence(limit: 10).makeAsyncIterator()
+        return try #require(try await iterator.next())
+    }
+
+    @Test func trackChangeRecordsListenedTimeExcludingPauses() async throws {
+        let db = try DatabaseManager.inMemory()
+        let clock = TestClock()
+        let manager = SessionManager(database: db, now: { clock.current })
+
+        manager.handleNowPlayingUpdate(update(title: "Song A"), device: device)
+        await manager.trackInsertTask?.value
+        let firstId = try #require(manager.currentTrack?.id)
+
+        clock.advance(60)
+        manager.handleNowPlayingUpdate(update(title: "Song A", isPlaying: false), device: device)
+        clock.advance(600) // paused for 10 minutes
+        manager.handleNowPlayingUpdate(update(title: "Song A"), device: device)
+        clock.advance(40)
+        manager.handleNowPlayingUpdate(update(title: "Song B"), device: device)
+        await manager.trackInsertTask?.value
+
+        let first = try #require(try db.fetchTrackEntry(id: firstId))
+        #expect(first.elapsedSeconds == 100)
+    }
+
+    @Test func listenedTimeIsClampedToTrackDuration() async throws {
+        let db = try DatabaseManager.inMemory()
+        let clock = TestClock()
+        let manager = SessionManager(database: db, now: { clock.current })
+
+        manager.handleNowPlayingUpdate(update(title: "Song A"), device: device)
+        await manager.trackInsertTask?.value
+        let firstId = try #require(manager.currentTrack?.id)
+
+        clock.advance(500) // longer than the 200 s track (e.g. repeat-one)
+        manager.handleNowPlayingUpdate(update(title: "Song B"), device: device)
+        await manager.trackInsertTask?.value
+
+        let first = try #require(try db.fetchTrackEntry(id: firstId))
+        #expect(first.elapsedSeconds == 200)
+    }
+
+    @Test func metadataLessUpdatesDoNotCreateTracks() async throws {
+        let db = try DatabaseManager.inMemory()
+        let manager = SessionManager(database: db)
+
+        manager.handleNowPlayingUpdate(update(title: nil, artist: nil), device: device)
+        await manager.trackInsertTask?.value
+
+        #expect(manager.currentSession != nil)
+        #expect(manager.currentTrack == nil)
+        #expect(try await recentTracks(db).isEmpty)
+
+        // Real metadata afterwards is recorded normally
+        manager.handleNowPlayingUpdate(update(), device: device)
+        await manager.trackInsertTask?.value
+        #expect(try await recentTracks(db).map(\.title) == ["Song A"])
+    }
+
+    @Test func metadataGapDoesNotDuplicateCurrentTrack() async throws {
+        let db = try DatabaseManager.inMemory()
+        let manager = SessionManager(database: db)
+
+        manager.handleNowPlayingUpdate(update(), device: device)
+        await manager.trackInsertTask?.value
+        manager.handleNowPlayingUpdate(update(title: nil, artist: nil), device: device)
+        manager.handleNowPlayingUpdate(update(), device: device)
+        await manager.trackInsertTask?.value
+
+        #expect(try await recentTracks(db).count == 1)
+    }
+}

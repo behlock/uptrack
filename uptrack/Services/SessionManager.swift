@@ -24,12 +24,18 @@ final class SessionManager {
     private(set) var currentTrack: TrackEntry?
 
     private let database: DatabaseManager
+    /// Clock used for every timestamp; injectable so tests can control elapsed time.
+    private let now: @MainActor () -> Date
     private var pauseTimer: Timer?
     private var lastAppBundleId: String?
     private var lastDeviceUID: String?
     private var lastTrackTitle: String?
     private var lastTrackArtist: String?
     private var trackStartedAt: Date?
+    /// Listening-time accounting for the current track: when the current pause
+    /// began (`nil` while playing) and how long earlier pauses lasted in total.
+    private var pausedAt: Date?
+    private var pausedDuration: TimeInterval = 0
     /// In-flight track insert (artwork resize + DB write happen off-main).
     /// Non-nil while an insert is pending; awaited by the artwork patch so it
     /// lands on the freshly inserted row. Prevents duplicate inserts.
@@ -39,8 +45,9 @@ final class SessionManager {
     /// inserts compare against it and drop their result if stale.
     private var trackGeneration = 0
 
-    init(database: DatabaseManager) {
+    init(database: DatabaseManager, now: @escaping @MainActor () -> Date = { Date() }) {
         self.database = database
+        self.now = now
 
         // Close any sessions left active from a previous run
         do {
@@ -58,8 +65,13 @@ final class SessionManager {
             return
         }
 
-        // Cancel pause timer if resuming
+        // Resuming: stop the inactivity timer and bank the time spent paused so it
+        // is excluded from the current track's listened time.
         cancelPauseTimer()
+        if let pausedAt {
+            pausedDuration += now().timeIntervalSince(pausedAt)
+            self.pausedAt = nil
+        }
 
         let appChanged = lastAppBundleId != nil && lastAppBundleId != update.appBundleId
         let deviceChanged = lastDeviceUID != nil && lastDeviceUID != device.uid
@@ -78,13 +90,16 @@ final class SessionManager {
             )
         }
 
-        // Check if track changed
-        let trackChanged = (update.title != lastTrackTitle || update.artist != lastTrackArtist)
-            && (update.title != nil || update.artist != nil)
+        // A track needs at least a title or an artist to be worth recording.
+        // Metadata-less updates (an app reporting only its playback state) neither
+        // create rows nor disturb change detection for the current track.
+        let hasMetadata = update.title != nil || update.artist != nil
+        let trackChanged = hasMetadata
+            && (update.title != lastTrackTitle || update.artist != lastTrackArtist)
 
-        if trackChanged || (currentTrack == nil && trackInsertTask == nil) {
+        if trackChanged || (hasMetadata && currentTrack == nil && trackInsertTask == nil) {
             Logger.session.debug("Track changed: \(update.title ?? "nil") - \(update.artist ?? "nil"), saving...")
-            finalizeCurrentTrack(elapsed: update.elapsedSeconds)
+            finalizeCurrentTrack()
             startNewTrack(
                 title: update.title,
                 artist: update.artist,
@@ -97,8 +112,10 @@ final class SessionManager {
 
         lastAppBundleId = update.appBundleId
         lastDeviceUID = device.uid
-        lastTrackTitle = update.title
-        lastTrackArtist = update.artist
+        if hasMetadata {
+            lastTrackTitle = update.title
+            lastTrackArtist = update.artist
+        }
     }
 
     func handleSleep() {
@@ -156,9 +173,14 @@ final class SessionManager {
     // MARK: - Private
 
     private func handlePause() {
-        guard currentSession != nil else { return }
+        guard let session = currentSession else { return }
+        // Already paused: the session is inactive and the inactivity timer is armed
+        // from the *first* pause. Repeated pause events (scrubbing while paused,
+        // sleep after pause) must not push the timeout out.
+        guard pausedAt == nil else { return }
+        pausedAt = now()
 
-        if let sessionId = currentSession?.id {
+        if let sessionId = session.id {
             do {
                 try database.updateSessionActive(id: sessionId, isActive: false)
             } catch {
@@ -192,7 +214,7 @@ final class SessionManager {
             appName: appName,
             outputDeviceUID: device.uid,
             outputDeviceName: device.name,
-            startedAt: Date(),
+            startedAt: now(),
             isActive: true
         )
 
@@ -205,14 +227,14 @@ final class SessionManager {
     }
 
     private func closeCurrentSession() {
-        finalizeCurrentTrack(elapsed: nil)
+        finalizeCurrentTrack()
 
         guard let session = currentSession, let sessionId = session.id else {
             resetState()
             return
         }
 
-        let duration = Date().timeIntervalSince(session.startedAt)
+        let duration = now().timeIntervalSince(session.startedAt)
 
         if duration < Constants.minimumSessionDurationSeconds {
             do {
@@ -222,7 +244,7 @@ final class SessionManager {
             }
         } else {
             do {
-                try database.closeSession(id: sessionId, endedAt: Date())
+                try database.closeSession(id: sessionId, endedAt: now())
             } catch {
                 Logger.session.debug("Failed to close session: \(error)")
             }
@@ -239,6 +261,8 @@ final class SessionManager {
         lastTrackTitle = nil
         lastTrackArtist = nil
         trackStartedAt = nil
+        pausedAt = nil
+        pausedDuration = 0
         trackInsertTask = nil
         trackGeneration += 1
         cancelPauseTimer()
@@ -258,7 +282,7 @@ final class SessionManager {
         }
         Logger.session.debug("startNewTrack: sessionId=\(sessionId) title=\(title ?? "nil") artist=\(artist ?? "nil")")
 
-        let startedAt = Date()
+        let startedAt = now()
         let db = database
         let artworkTooLarge = (artworkData?.count ?? 0) > Constants.maxArtworkDataSize
         if artworkTooLarge, let artwork = artworkData {
@@ -266,6 +290,9 @@ final class SessionManager {
         }
         let artworkForResize = artworkTooLarge ? nil : artworkData
 
+        // The new track starts playing now; pause accounting restarts with it.
+        pausedAt = nil
+        pausedDuration = 0
         trackGeneration += 1
         let generation = trackGeneration
 
@@ -304,20 +331,24 @@ final class SessionManager {
         }
     }
 
-    private func finalizeCurrentTrack(elapsed: Double?) {
-        guard let track = currentTrack, let trackId = track.id else { return }
+    /// Persist how long the current track was actually listened to: wall-clock time
+    /// since it started, minus time spent paused, clamped to the track's duration
+    /// when known. Called before the track is replaced or its session closes.
+    private func finalizeCurrentTrack() {
+        guard let track = currentTrack, let trackId = track.id, let started = trackStartedAt else { return }
 
-        let elapsedSeconds: Double
-        if let elapsed {
-            elapsedSeconds = elapsed
-        } else if let started = trackStartedAt {
-            elapsedSeconds = Date().timeIntervalSince(started)
-        } else {
-            return
+        let current = now()
+        var listened = current.timeIntervalSince(started) - pausedDuration
+        if let pausedAt {
+            listened -= current.timeIntervalSince(pausedAt)
+        }
+        listened = max(0, listened)
+        if let duration = track.durationSeconds, duration > 0 {
+            listened = min(listened, duration)
         }
 
         do {
-            try database.updateTrackEntryElapsed(id: trackId, elapsedSeconds: elapsedSeconds)
+            try database.updateTrackEntryElapsed(id: trackId, elapsedSeconds: listened)
         } catch {
             Logger.session.debug("Failed to update track elapsed time: \(error)")
         }
