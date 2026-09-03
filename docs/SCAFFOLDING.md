@@ -159,14 +159,12 @@ Key decisions encoded here:
 @main
 struct <AppName>App: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
-    @State private var appState = AppState()
     @State private var updaterController = UpdaterController()
 
     var body: some Scene {
         MenuBarExtra {
             MenuBarView()
-                .environment(appState)
-                .onAppear { appDelegate.appState = appState }
+                .environment(appDelegate.appState)
         } label: {
             Image("MenuBarIcon").renderingMode(.template)   // template image → correct menu bar tinting
         }
@@ -179,8 +177,8 @@ struct <AppName>App: App {
 }
 ```
 
-- A minimal `AppDelegate` exists **only** for `applicationWillTerminate`, which calls `appState.shutdown()` (removes notification observers, system listeners, hotkeys).
-- Views open settings via `@Environment(\.openSettings)` + `NSApp.activate(ignoringOtherApps: true)` (needed because LSUIElement apps aren't active when the menu is clicked).
+- A minimal `AppDelegate` **owns** `AppState` (`let appState = AppState()`) and exists otherwise only for `applicationWillTerminate`, which calls `appState.shutdown()` (removes notification observers, system listeners, hotkeys). Owning it there — rather than wiring a reference from a view's `.onAppear` — guarantees shutdown runs even if the menu was never opened.
+- Views open settings via `@Environment(\.openSettings)` + `NSApp.activate()` (needed because LSUIElement apps aren't active when the menu is clicked).
 - **`.menu`-style MenuBarExtra constraint:** the menu renders only `Button`, `Text`, `Divider`, `Menu`, and `ForEach` of those. Any other view (stacks, images-as-layout, custom styles) is silently dropped. Design menu content accordingly.
 
 ### 5.2 Composition root

@@ -74,6 +74,8 @@ struct MenuBarView: View {
 
     private func showSettings() {
         openSettings()
-        NSApp.activate(ignoringOtherApps: true)
+        // LSUIElement apps aren't active when their menu is clicked; activation is
+        // needed so the Settings window comes to the front.
+        NSApp.activate()
     }
 }

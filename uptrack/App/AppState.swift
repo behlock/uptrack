@@ -7,7 +7,7 @@ import SwiftUI
 @Observable
 final class AppState {
     let mediaRemoteAvailable = MediaRemoteBridge.isAvailable
-    private(set) var databaseAvailable = true
+    let databaseAvailable: Bool
 
     let databaseManager: DatabaseManager?
     let trackStore: TrackHistoryStore?
@@ -19,6 +19,9 @@ final class AppState {
     init() {
         Logger.app.debug("init starting...")
         audioDeviceMonitor = AudioDeviceMonitor()
+        // Start device monitoring first so the initial output device is known
+        // before the first now-playing update reaches the session manager.
+        audioDeviceMonitor.startMonitoring()
 
         do {
             let db = try DatabaseManager()
@@ -36,12 +39,11 @@ final class AppState {
                 audioDeviceMonitor: audioDeviceMonitor
             )
             nowPlayingMonitor = npm
-
             npm.start()
-            audioDeviceMonitor.startMonitoring()
             Logger.app.debug("Monitors started")
 
             bezelController = BezelController(trackStore: store)
+            databaseAvailable = true
         } catch {
             Logger.app.error("Failed to initialize database: \(error)")
             databaseManager = nil
