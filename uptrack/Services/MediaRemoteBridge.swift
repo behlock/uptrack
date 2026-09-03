@@ -1,7 +1,9 @@
 import Foundation
 import os
 
-final class MediaRemoteBridge: Sendable {
+/// Runtime bridge to the private MediaRemote framework. Pure namespace — every
+/// member is static and resolved once, lazily.
+enum MediaRemoteBridge {
     private nonisolated(unsafe) static let bundle: CFBundle? = {
         let path = "/System/Library/PrivateFrameworks/MediaRemote.framework"
         guard let url = CFURLCreateWithFileSystemPath(

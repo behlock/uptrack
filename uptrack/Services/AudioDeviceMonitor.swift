@@ -10,37 +10,51 @@ final class AudioDeviceMonitor {
     /// from @MainActor methods and dispatched on DispatchQueue.main.
     private nonisolated(unsafe) var listenerBlock: AudioObjectPropertyListenerBlock?
 
-    func startMonitoring() {
-        var address = AudioObjectPropertyAddress(
+    private static func defaultOutputAddress() -> AudioObjectPropertyAddress {
+        AudioObjectPropertyAddress(
             mSelector: kAudioHardwarePropertyDefaultOutputDevice,
             mScope: kAudioObjectPropertyScopeGlobal,
             mElement: kAudioObjectPropertyElementMain
         )
+    }
 
-        listenerBlock = { [weak self] _, _ in
+    /// Idempotent: calling this while already monitoring is a no-op, so a listener
+    /// can never be registered twice.
+    func startMonitoring() {
+        guard listenerBlock == nil else { return }
+
+        var address = Self.defaultOutputAddress()
+        let block: AudioObjectPropertyListenerBlock = { [weak self] _, _ in
             Task { @MainActor in
                 self?.updateCurrentDevice()
             }
         }
+        listenerBlock = block
 
         AudioObjectAddPropertyListenerBlock(
             AudioObjectID(kAudioObjectSystemObject),
             &address,
             DispatchQueue.main,
-            listenerBlock!
+            block
         )
 
         updateCurrentDevice()
     }
 
+    func stopMonitoring() {
+        guard let block = listenerBlock else { return }
+        var address = Self.defaultOutputAddress()
+        AudioObjectRemovePropertyListenerBlock(
+            AudioObjectID(kAudioObjectSystemObject),
+            &address, DispatchQueue.main, block
+        )
+        listenerBlock = nil
+    }
+
     private func updateCurrentDevice() {
         var deviceID = AudioDeviceID()
         var size = UInt32(MemoryLayout<AudioDeviceID>.size)
-        var address = AudioObjectPropertyAddress(
-            mSelector: kAudioHardwarePropertyDefaultOutputDevice,
-            mScope: kAudioObjectPropertyScopeGlobal,
-            mElement: kAudioObjectPropertyElementMain
-        )
+        var address = Self.defaultOutputAddress()
 
         let status = AudioObjectGetPropertyData(
             AudioObjectID(kAudioObjectSystemObject),
@@ -70,19 +84,5 @@ final class AudioDeviceMonitor {
         let status = AudioObjectGetPropertyData(deviceID, &address, 0, nil, &valueSize, &value)
         guard status == noErr, let cfString = value?.takeRetainedValue() else { return nil }
         return cfString as String
-    }
-
-    func stopMonitoring() {
-        guard let block = listenerBlock else { return }
-        var address = AudioObjectPropertyAddress(
-            mSelector: kAudioHardwarePropertyDefaultOutputDevice,
-            mScope: kAudioObjectPropertyScopeGlobal,
-            mElement: kAudioObjectPropertyElementMain
-        )
-        AudioObjectRemovePropertyListenerBlock(
-            AudioObjectID(kAudioObjectSystemObject),
-            &address, DispatchQueue.main, block
-        )
-        listenerBlock = nil
     }
 }

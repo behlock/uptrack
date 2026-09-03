@@ -76,13 +76,14 @@ final class BezelPanel: NSPanel {
     private let initialRepeatDelay: TimeInterval = 0.35
     private let repeatInterval: TimeInterval = 0.08
 
-    /// keyCode -> navigation direction. true = forward (onArrowUp), false = back.
-    private static let navKeys: [UInt16: Bool] = [
-        126: true, // arrow up
-        124: true, // arrow right
-        48: true, // tab (treated as forward regardless of shift)
-        125: false, // arrow down
-        123: false, // arrow left
+    /// Navigation keys in priority order (an array, not a dictionary, so the
+    /// winner is deterministic when two are held at once). `forward` = onArrowUp.
+    private static let navKeys: [(keyCode: UInt16, forward: Bool)] = [
+        (126, true), // arrow up
+        (124, true), // arrow right
+        (48, true), // tab (treated as forward regardless of shift)
+        (125, false), // arrow down
+        (123, false), // arrow left
     ]
 
     override func keyDown(with event: NSEvent) {
@@ -135,8 +136,8 @@ final class BezelPanel: NSPanel {
             }
         }
 
-        let pressed = Self.navKeys.keys.first { keyCode in
-            CGEventSource.keyState(.combinedSessionState, key: keyCode)
+        let pressed = Self.navKeys.first { key in
+            CGEventSource.keyState(.combinedSessionState, key: key.keyCode)
         }
 
         guard let pressed else {
@@ -146,14 +147,14 @@ final class BezelPanel: NSPanel {
             return
         }
 
-        let forward = Self.navKeys[pressed] ?? true
+        let forward = pressed.forward
 
-        if heldKey != pressed {
+        if heldKey != pressed.keyCode {
             // newly pressed: fire once immediately, arm the initial delay.
             // Exception: when the global hotkey just fired (Carbon already navigated),
             // we swallow this one keystroke so a single Option+Tab press advances by 1,
             // not 2.
-            heldKey = pressed
+            heldKey = pressed.keyCode
             holdElapsed = 0
             nextFireAt = initialRepeatDelay
             if suppressNextImmediateFire {

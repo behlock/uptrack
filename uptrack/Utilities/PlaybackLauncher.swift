@@ -6,7 +6,9 @@ import os
 /// playback (exact track) over a title search.
 enum PlaybackLauncher {
     static func play(_ item: BezelTrackItem) {
-        guard let title = item.title else { return }
+        // Same rule the menu uses to disable rows: only known players, and only
+        // when there is a title to search for.
+        guard item.source.isPlayable, let title = item.title else { return }
         switch item.source {
         case .spotify:
             if let uri = item.sourceURI {
@@ -16,9 +18,11 @@ enum PlaybackLauncher {
                 Logger.playback.debug("Spotify via search: \(title)")
                 searchInSpotify(title: title, artist: item.artist)
             }
-        case .appleMusic, .other:
-            Logger.playback.debug("Apple Music search: \(title) — bundleId: \(item.appBundleId)")
+        case .appleMusic:
+            Logger.playback.debug("Apple Music search: \(title)")
             searchInAppleMusic(title: title)
+        case .other:
+            break
         }
     }
 
@@ -83,15 +87,15 @@ enum PlaybackLauncher {
         return sanitized
     }
 
-    /// Execute an AppleScript on a background queue to prevent main thread blocking
+    /// Execute an AppleScript off the main actor so a slow or unresponsive
+    /// target app never blocks the UI (same approach as `ArtworkFetcher`).
     private static func executeAppleScript(_ source: String) {
-        DispatchQueue.global(qos: .userInitiated).async {
+        Task.detached(priority: .userInitiated) {
+            guard let appleScript = NSAppleScript(source: source) else { return }
             var error: NSDictionary?
-            if let appleScript = NSAppleScript(source: source) {
-                appleScript.executeAndReturnError(&error)
-                if let error {
-                    Logger.playback.debug("Error: \(error)")
-                }
+            appleScript.executeAndReturnError(&error)
+            if let error {
+                Logger.playback.debug("Error: \(error)")
             }
         }
     }

@@ -1,4 +1,5 @@
 import KeyboardShortcuts
+import os
 import ServiceManagement
 import SwiftUI
 
@@ -6,6 +7,16 @@ struct SettingsView: View {
     @Environment(UpdaterController.self) private var updater
 
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
+
+    /// The toggle drives `SMAppService` directly and then re-reads the real status,
+    /// so the switch always reflects the system's state (including when registration
+    /// fails or is awaiting approval) without an `onChange` feedback loop.
+    private var launchAtLoginBinding: Binding<Bool> {
+        Binding(
+            get: { launchAtLogin },
+            set: { setLaunchAtLogin($0) }
+        )
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -16,19 +27,9 @@ struct SettingsView: View {
 
                 Spacer()
 
-                Toggle("", isOn: $launchAtLogin)
+                Toggle("launch on login", isOn: launchAtLoginBinding)
+                    .labelsHidden()
                     .toggleStyle(.switch)
-                    .onChange(of: launchAtLogin) { _, newValue in
-                        do {
-                            if newValue {
-                                try SMAppService.mainApp.register()
-                            } else {
-                                try SMAppService.mainApp.unregister()
-                            }
-                        } catch {
-                            launchAtLogin = SMAppService.mainApp.status == .enabled
-                        }
-                    }
             }
 
             HStack {
@@ -56,5 +57,23 @@ struct SettingsView: View {
         .padding(24)
         .frame(width: 300)
         .onAppear { launchAtLogin = SMAppService.mainApp.status == .enabled }
+    }
+
+    private func setLaunchAtLogin(_ enabled: Bool) {
+        let service = SMAppService.mainApp
+        do {
+            if enabled {
+                try service.register()
+            } else {
+                try service.unregister()
+            }
+        } catch {
+            Logger.app.error("Launch at login \(enabled ? "register" : "unregister") failed: \(error)")
+        }
+        // macOS may require the user to approve the login item in System Settings.
+        if enabled, service.status == .requiresApproval {
+            SMAppService.openSystemSettingsLoginItems()
+        }
+        launchAtLogin = service.status == .enabled
     }
 }
