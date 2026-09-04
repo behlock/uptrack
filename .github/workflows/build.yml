@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-and-test:
     runs-on: macos-26
@@ -38,8 +42,16 @@ jobs:
             -project uptrack.xcodeproj \
             -scheme uptrack \
             -configuration Debug \
+            -resultBundlePath build/uptrack.xcresult \
             CODE_SIGNING_ALLOWED=NO \
             | tail -100
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: uptrack.xcresult
+          path: build/uptrack.xcresult
 
   lint:
     runs-on: macos-26
