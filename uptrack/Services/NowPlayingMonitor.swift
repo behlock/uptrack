@@ -13,9 +13,9 @@ private struct MRParsedInfo: Sendable {
 
     static func extract(from info: [String: Any]) -> MRParsedInfo {
         MRParsedInfo(
-            title: info[MediaRemoteBridge.infoTitle] as? String,
-            artist: info[MediaRemoteBridge.infoArtist] as? String,
-            album: info[MediaRemoteBridge.infoAlbum] as? String,
+            title: truncateMetadata(info[MediaRemoteBridge.infoTitle] as? String),
+            artist: truncateMetadata(info[MediaRemoteBridge.infoArtist] as? String),
+            album: truncateMetadata(info[MediaRemoteBridge.infoAlbum] as? String),
             artworkData: info[MediaRemoteBridge.infoArtworkData] as? Data,
             durationSeconds: info[MediaRemoteBridge.infoDuration] as? Double,
             elapsedSeconds: info[MediaRemoteBridge.infoElapsedTime] as? Double,

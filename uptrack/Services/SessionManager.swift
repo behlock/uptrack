@@ -138,6 +138,10 @@ final class SessionManager {
     /// so we can drop the patch if the user has skipped tracks while the fetch was
     /// in flight. Awaits any in-flight track insert so the patch targets the new row.
     func patchCurrentTrackArtwork(_ data: Data, title: String?, artist: String?) {
+        guard data.count <= Constants.maxArtworkDataSize else {
+            Logger.session.debug("Out-of-band artwork too large (\(data.count) bytes), skipping")
+            return
+        }
         Task { [weak self] in
             await self?.trackInsertTask?.value
 
