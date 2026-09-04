@@ -106,5 +106,11 @@ struct DatabaseManagerTests {
         try db.updateTrackEntryElapsed(id: trackId, elapsedSeconds: 42)
         try db.updateTrackEntrySourceURI(id: trackId, sourceURI: "spotify:track:xyz")
         try db.updateTrackEntryArtwork(id: trackId, artworkData: Data([0x01]))
+
+        let updated = try #require(try db.fetchTrackEntry(id: trackId))
+        #expect(updated.elapsedSeconds == 42)
+        #expect(updated.sourceURI == "spotify:track:xyz")
+        #expect(updated.artworkData == Data([0x01]))
+        #expect(try db.fetchTrackEntry(id: trackId + 1) == nil)
     }
 }
