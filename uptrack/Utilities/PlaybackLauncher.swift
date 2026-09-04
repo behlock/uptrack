@@ -38,7 +38,7 @@ enum PlaybackLauncher {
             end if
         end tell
         """
-        executeAppleScript(script)
+        executeAppleScript(script, label: "Music playback")
     }
 
     // MARK: - Spotify
@@ -65,7 +65,7 @@ enum PlaybackLauncher {
         end tell
         """
         Logger.playback.debug("Playing URI: \(uri)")
-        executeAppleScript(script)
+        executeAppleScript(script, label: "Spotify playback")
     }
 
     // MARK: - Helpers
@@ -87,16 +87,11 @@ enum PlaybackLauncher {
         return sanitized
     }
 
-    /// Execute an AppleScript off the main actor so a slow or unresponsive
-    /// target app never blocks the UI (same approach as `ArtworkFetcher`).
-    private static func executeAppleScript(_ source: String) {
-        Task.detached(priority: .userInitiated) {
-            guard let appleScript = NSAppleScript(source: source) else { return }
-            var error: NSDictionary?
-            appleScript.executeAndReturnError(&error)
-            if let error {
-                Logger.playback.debug("Error: \(error)")
-            }
+    /// Fire-and-forget through the shared runner so the UI never blocks and
+    /// scripts never overlap with artwork lookups.
+    private static func executeAppleScript(_ source: String, label: String) {
+        Task {
+            await AppleScriptRunner.shared.execute(source, label: label)
         }
     }
 }

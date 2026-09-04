@@ -1,4 +1,3 @@
-import AppKit
 import Foundation
 import os
 
@@ -29,56 +28,30 @@ enum ArtworkFetcher {
         }
     }
 
-    /// The AppleScript round-trips are synchronous, so they run on detached tasks.
     private static func spotifyArtworkURL() async -> URL? {
-        await Task.detached(priority: .userInitiated) { () -> URL? in
-            let script = """
-            tell application "Spotify"
-                if it is running then
-                    return artwork url of current track
-                end if
-            end tell
-            """
-            guard let descriptor = runScript(script, label: "Spotify"),
-                  let urlString = descriptor.stringValue,
-                  !urlString.isEmpty else { return nil }
-            return URL(string: urlString)
-        }.value
+        let script = """
+        tell application "Spotify"
+            if it is running then
+                return artwork url of current track
+            end if
+        end tell
+        """
+        guard let urlString = await AppleScriptRunner.shared.string(script, label: "Spotify artwork"),
+              let url = URL(string: urlString),
+              url.scheme?.lowercased() == "https" else { return nil }
+        return url
     }
 
     private static func appleMusicArtwork() async -> Data? {
-        await Task.detached(priority: .userInitiated) { () -> Data? in
-            let script = """
-            tell application "Music"
-                if it is running then
-                    if exists current track then
-                        return raw data of artwork 1 of current track
-                    end if
+        let script = """
+        tell application "Music"
+            if it is running then
+                if exists current track then
+                    return raw data of artwork 1 of current track
                 end if
-            end tell
-            """
-            guard let descriptor = runScript(script, label: "Music") else { return nil }
-            // `raw data` arrives as a typeData descriptor; fall back to coercion if
-            // AppleScript wrapped it as `typePicture` instead.
-            let bytes = descriptor.data
-            if !bytes.isEmpty {
-                return bytes
-            }
-            if let coerced = descriptor.coerce(toDescriptorType: typeData)?.data, !coerced.isEmpty {
-                return coerced
-            }
-            return nil
-        }.value
-    }
-
-    private static func runScript(_ source: String, label: String) -> NSAppleEventDescriptor? {
-        guard let appleScript = NSAppleScript(source: source) else { return nil }
-        var error: NSDictionary?
-        let descriptor = appleScript.executeAndReturnError(&error)
-        if let error {
-            Logger.artwork.debug("\(label) AppleScript error: \(error)")
-            return nil
-        }
-        return descriptor
+            end if
+        end tell
+        """
+        return await AppleScriptRunner.shared.data(script, label: "Music artwork")
     }
 }

@@ -14,4 +14,5 @@ extension Logger {
     static let playback = Logger(subsystem: subsystem, category: "playback")
     static let mediaRemote = Logger(subsystem: subsystem, category: "mediaRemote")
     static let hotkey = Logger(subsystem: subsystem, category: "hotkey")
+    static let appleScript = Logger(subsystem: subsystem, category: "appleScript")
 }
