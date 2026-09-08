@@ -13,5 +13,3 @@ xcodegen generate   # rerun after adding or removing source files
 xcodebuild test -project uptrack.xcodeproj -scheme uptrack -configuration Debug CODE_SIGNING_ALLOWED=NO
 swiftformat --lint .
 ```
-
-Pushing a `v*` tag builds a release; `scripts/build-release.sh` does the same locally. Architecture notes are in `docs/SCAFFOLDING.md`.
